@@ -399,6 +399,7 @@ body {
   border-radius: var(--border-radius);
   background-color: var(--bg-secondary);
   outline: none;
+  width: 100%;
 }
 
 .variable-input:focus {
@@ -415,6 +416,7 @@ textarea.variable-input {
 /* Card Actions styling */
 .card-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
 }

@@ -6,6 +6,7 @@ let activeCategory = 'all';
 let searchQuery = '';
 let hapticsEnabled = localStorage.getItem('pv_haptics') !== 'false'; // default true
 let newServiceWorker = null;
+let editingDraftId = null; // Track draft being edited
 
 // GitHub Repository Auto-detection
 let repoOwner = 'dg-code-source';
@@ -358,6 +359,19 @@ function renderPrompts() {
         publishDraftToGitHub(p, publishBtn);
       };
 
+      editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-outline btn-icon-only';
+      editBtn.setAttribute('aria-label', 'Edit draft');
+      editBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+      `;
+      editBtn.onclick = () => {
+        openEditDraftModal(p);
+      };
+
       copyMdBtn = document.createElement('button');
       copyMdBtn.className = 'btn btn-outline btn-icon-only';
       copyMdBtn.setAttribute('aria-label', 'Copy raw markdown');
@@ -404,6 +418,7 @@ ${p.prompt}`;
     if (p.isDraft) {
       actions.appendChild(copyBtn);
       actions.appendChild(publishBtn);
+      actions.appendChild(editBtn);
       actions.appendChild(copyMdBtn);
       actions.appendChild(deleteBtn);
     } else {
@@ -593,6 +608,24 @@ function deleteDraft(id) {
   localStorage.setItem('pv_drafts', JSON.stringify(drafts));
   renderCategories();
   renderPrompts();
+}
+
+// Open Draft Edit Modal
+function openEditDraftModal(prompt) {
+  editingDraftId = prompt.id;
+  
+  // Set modal header and submit button text
+  document.querySelector('#draft-modal h2').textContent = 'Edit Prompt Draft';
+  document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Changes';
+  
+  // Prefill values
+  document.getElementById('draft-title').value = prompt.title;
+  document.getElementById('draft-desc').value = prompt.description;
+  document.getElementById('draft-cat').value = prompt.category;
+  document.getElementById('draft-tags').value = prompt.tags ? prompt.tags.join(', ') : '';
+  document.getElementById('draft-prompt').value = prompt.prompt;
+  
+  draftModal.classList.remove('hidden');
 }
 
 // Extract variables from prompt text
@@ -821,12 +854,15 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   const closeDraftModal = () => {
     draftModal.classList.add('hidden');
     draftForm.reset();
+    editingDraftId = null;
+    document.querySelector('#draft-modal h2').textContent = 'Create Prompt Draft';
+    document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Local Draft';
   };
 
   draftCloseBtn.addEventListener('click', closeDraftModal);
   draftOverlay.addEventListener('click', closeDraftModal);
 
-  // Draft Creation Form submit
+  // Draft Creation/Edit Form submit
   draftForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
@@ -837,24 +873,40 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
     const prompt = document.getElementById('draft-prompt').value;
 
     const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
-    const id = 'draft-' + Date.now();
     const variables = extractVariables(prompt);
 
-    const newDraft = {
-      id,
-      title,
-      description,
-      category,
-      tags,
-      prompt,
-      variables,
-      isDraft: true
-    };
+    if (editingDraftId) {
+      // Edit mode
+      const draftIndex = drafts.findIndex(d => d.id === editingDraftId);
+      if (draftIndex > -1) {
+        drafts[draftIndex].title = title;
+        drafts[draftIndex].description = description;
+        drafts[draftIndex].category = category;
+        drafts[draftIndex].tags = tags;
+        drafts[draftIndex].prompt = prompt;
+        drafts[draftIndex].variables = variables;
+        localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+        showToast('Local draft updated!', 'success');
+      }
+    } else {
+      // Creation mode
+      const id = 'draft-' + Date.now();
+      const newDraft = {
+        id,
+        title,
+        description,
+        category,
+        tags,
+        prompt,
+        variables,
+        isDraft: true
+      };
 
-    drafts.push(newDraft);
-    localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+      drafts.push(newDraft);
+      localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+      showToast('Local draft created!', 'success');
+    }
 
-    showToast('Local draft created!', 'success');
     closeDraftModal();
     renderCategories();
     renderPrompts();
