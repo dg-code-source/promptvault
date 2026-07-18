@@ -1,5 +1,6 @@
 // State Management
 let prompts = [];
+let drafts = JSON.parse(localStorage.getItem('pv_drafts')) || [];
 let favorites = JSON.parse(localStorage.getItem('pv_favorites')) || [];
 let activeCategory = 'all';
 let searchQuery = '';
@@ -25,6 +26,13 @@ const vibrateCheckbox = document.getElementById('setting-vibrate');
 const updateBanner = document.getElementById('update-banner');
 const updateBtn = document.getElementById('update-btn');
 const toastContainer = document.getElementById('toast-container');
+
+// Draft UI Elements
+const addDraftBtn = document.getElementById('add-draft-btn');
+const draftModal = document.getElementById('draft-modal');
+const draftCloseBtn = document.getElementById('draft-close-btn');
+const draftOverlay = document.getElementById('draft-overlay');
+const draftForm = document.getElementById('draft-form');
 
 // Initialize settings checkbox state
 vibrateCheckbox.checked = hapticsEnabled;
@@ -104,8 +112,9 @@ updateBtn.addEventListener('click', () => {
 
 // Category Rendering
 function renderCategories() {
-  // Extract unique categories from prompts
-  const categories = [...new Set(prompts.map(p => p.category))].filter(Boolean);
+  // Extract unique categories from prompts + local drafts
+  const allPrompts = [...prompts, ...drafts];
+  const categories = [...new Set(allPrompts.map(p => p.category))].filter(Boolean);
   
   // Clear dynamic tabs (everything after the static 'Favorites' tab)
   const staticTabsCount = 2; // All, Favorites
@@ -127,7 +136,8 @@ function renderCategories() {
 function renderPrompts() {
   promptsGrid.innerHTML = '';
   
-  let filtered = prompts.filter(p => {
+  const allPrompts = [...prompts, ...drafts];
+  let filtered = allPrompts.filter(p => {
     // Category filter
     if (activeCategory === 'favorites') {
       return favorites.includes(p.id);
@@ -192,6 +202,13 @@ function renderPrompts() {
     const title = document.createElement('h2');
     title.className = 'card-title';
     title.textContent = p.title;
+    
+    if (p.isDraft) {
+      const badge = document.createElement('span');
+      badge.className = 'draft-badge';
+      badge.textContent = 'Draft';
+      title.appendChild(badge);
+    }
     
     const desc = document.createElement('p');
     desc.className = 'card-description';
@@ -294,26 +311,78 @@ function renderPrompts() {
     };
     
     // Reset inputs Action (Only show if prompt has variables)
-    if (p.variables && p.variables.length > 0) {
-      const resetBtn = document.createElement('button');
-      resetBtn.className = 'btn btn-outline btn-icon-only';
-      resetBtn.setAttribute('aria-label', 'Reset inputs');
-      resetBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M23 4v6h-6"></path>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'btn btn-outline btn-icon-only';
+    resetBtn.setAttribute('aria-label', 'Reset inputs');
+    resetBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 4v6h-6"></path>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+    `;
+    resetBtn.onclick = () => {
+      confirmAndResetInputs(card);
+    };
+    
+    // Copy Markdown template for local drafts
+    let copyMdBtn, deleteBtn;
+    if (p.isDraft) {
+      copyMdBtn = document.createElement('button');
+      copyMdBtn.className = 'btn btn-outline';
+      copyMdBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
         </svg>
+        Copy MD
       `;
-      resetBtn.onclick = () => {
-        confirmAndResetInputs(card);
+      copyMdBtn.onclick = () => {
+        const md = `---
+title: ${p.title}
+description: ${p.description}
+category: ${p.category}
+tags: ${p.tags ? p.tags.join(', ') : ''}
+---
+
+${p.prompt}`;
+        copyToClipboard(md);
+        showToast('Markdown template copied!', 'success');
       };
       
+      deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn btn-outline btn-icon-only';
+      deleteBtn.style.borderColor = '#dc2626';
+      deleteBtn.style.color = '#dc2626';
+      deleteBtn.setAttribute('aria-label', 'Delete draft');
+      deleteBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      `;
+      deleteBtn.onclick = () => {
+        if (confirm('Delete this local draft?')) {
+          deleteDraft(p.id);
+        }
+      };
+    }
+    
+    // Assemble buttons based on draft vs repository status
+    if (p.isDraft) {
       actions.appendChild(copyBtn);
-      actions.appendChild(shareBtn);
-      actions.appendChild(resetBtn);
+      actions.appendChild(copyMdBtn);
+      actions.appendChild(deleteBtn);
     } else {
-      actions.appendChild(copyBtn);
-      actions.appendChild(shareBtn);
+      if (p.variables && p.variables.length > 0) {
+        actions.appendChild(copyBtn);
+        actions.appendChild(shareBtn);
+        actions.appendChild(resetBtn);
+      } else {
+        actions.appendChild(copyBtn);
+        actions.appendChild(shareBtn);
+      }
     }
     
     card.appendChild(actions);
@@ -486,6 +555,35 @@ function triggerHapticFeedback() {
   }
 }
 
+// Delete Local Draft
+function deleteDraft(id) {
+  drafts = drafts.filter(d => d.id !== id);
+  localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+  renderCategories();
+  renderPrompts();
+}
+
+// Extract variables from prompt text
+function extractVariables(promptText) {
+  const variableRegex = /\{([a-zA-Z0-9_-]+)(?::([^}]+))?\}/g;
+  const variablesMap = new Map();
+  let match;
+  
+  while ((match = variableRegex.exec(promptText)) !== null) {
+    const varName = match[1];
+    const defaultValue = match[2] || '';
+    
+    if (!variablesMap.has(varName) || defaultValue !== '') {
+      variablesMap.set(varName, defaultValue);
+    }
+  }
+  
+  return Array.from(variablesMap.entries()).map(([name, defVal]) => ({
+    name,
+    default: defVal
+  }));
+}
+
 // Custom Toast notifications (placed at the top)
 function showToast(message, type = 'success') {
   const toast = document.createElement('div');
@@ -606,6 +704,53 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   
   window.addEventListener('offline', () => {
     showToast('Running in Offline Mode.', 'error');
+  });
+
+  // Draft Modal events
+  addDraftBtn.addEventListener('click', () => {
+    draftModal.classList.remove('hidden');
+  });
+
+  const closeDraftModal = () => {
+    draftModal.classList.add('hidden');
+    draftForm.reset();
+  };
+
+  draftCloseBtn.addEventListener('click', closeDraftModal);
+  draftOverlay.addEventListener('click', closeDraftModal);
+
+  // Draft Creation Form submit
+  draftForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById('draft-title').value.trim();
+    const description = document.getElementById('draft-desc').value.trim();
+    const category = document.getElementById('draft-cat').value.trim() || 'General';
+    const tagsInput = document.getElementById('draft-tags').value.trim();
+    const prompt = document.getElementById('draft-prompt').value;
+
+    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const id = 'draft-' + Date.now();
+    const variables = extractVariables(prompt);
+
+    const newDraft = {
+      id,
+      title,
+      description,
+      category,
+      tags,
+      prompt,
+      variables,
+      isDraft: true
+    };
+
+    drafts.push(newDraft);
+    localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+
+    showToast('Local draft created!', 'success');
+    closeDraftModal();
+    renderCategories();
+    renderPrompts();
   });
 }
 
