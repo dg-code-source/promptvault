@@ -58,3 +58,20 @@ This document records the architectural blueprints, technical specifications, an
 * **Force Sync Button**: In settings, a "Force Sync" button fetches the index file with a cash-busting query parameter (`?t=Timestamp`) and updates local cache.
 * **Network Listener**: The app monitors connection status (`window.addEventListener('online')`). When connection returns, it automatically refetches the latest prompts and displays a toast notification: "Connection restored. Prompts synced!".
 * **Asset Update Notifications**: The Service Worker listens for new registrations. If a code/style change is made, the app displays a banner: "App update available! [Update Now]". Clicking it triggers a `skipWaiting` command to instantly activate the new version.
+
+---
+
+## 6. Local Drafts & Mobile Git Sync Workflow
+
+* **Problem Statement**: Modifying or writing markdown files with frontmatter formatting directly on a mobile keyboard is prone to typos and syntax errors.
+* **Solution (Local Drafts)**: Users can create temporary "Draft" prompts directly inside the app, which are stored in the browser's `localStorage` as `pv_drafts`.
+* **Merged State Management**: When the app loads, it merges local drafts with the remote prompts list:
+  ```javascript
+  const allPrompts = [...prompts, ...drafts];
+  ```
+  This allows drafts to inherit all UI features (real-time filtering, search, variable form rendering, clipboard copy, haptic settings) automatically.
+* **Draft Card Custom Actions**:
+  - **Draft Badge**: Draft cards render a red `DRAFT` label to visually distinguish them.
+  - **Copy MD**: Formats the draft's title, description, category, tags, and prompt body into a standard Markdown frontmatter text string, copying it to the clipboard. The user can paste this directly when creating a new file in the GitHub app.
+  - **Delete Draft**: Tapping the trash icon deletes the draft from `localStorage` once the compiled version is pushed and synced from GitHub Pages.
+
