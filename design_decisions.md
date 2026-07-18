@@ -78,4 +78,6 @@ This document records the architectural blueprints, technical specifications, an
   - **Edit Draft**: Tapping the Edit button (Pencil icon) pre-fills the creation modal, switches it to "Edit Prompt Draft" mode, and saves modifications back to the `localStorage` drafts array upon form submission.
   - **Copy MD**: Formats the draft's title, description, category, tags, and prompt body into a standard Markdown frontmatter text string, copying it to the clipboard. The user can paste this directly when creating a new file in the GitHub app.
   - **Delete Draft**: Tapping the trash icon deletes the draft from `localStorage` once the compiled version is pushed and synced from GitHub Pages.
+* **Editing Published Repository Prompts**: Published repository prompts also render the Edit button (Pencil icon). When modified, the app queries the current file metadata from the GitHub REST API to fetch its latest `sha` checksum, builds the overwritten Markdown text, and submits a PUT request to update the file on GitHub.
+* **Optimistic Local Updates**: Since GitHub Actions deployment takes ~30 seconds to compile, the app performs an "optimistic update" locally inside browser memory immediately upon a successful API write. This ensures the user sees their changes in the UI instantly, without having to wait for the next sync cycle.
 
