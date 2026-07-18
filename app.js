@@ -20,6 +20,7 @@ const settingsModal = document.getElementById('settings-modal');
 const settingsCloseBtn = document.getElementById('settings-close-btn');
 const modalOverlay = document.getElementById('modal-overlay');
 const syncBtn = document.getElementById('sync-btn');
+const copyTemplateBtn = document.getElementById('copy-template-btn');
 const vibrateCheckbox = document.getElementById('setting-vibrate');
 const updateBanner = document.getElementById('update-banner');
 const updateBtn = document.getElementById('update-btn');
@@ -579,6 +580,20 @@ function setupEventListeners() {
   // Force fetch data sync
   syncBtn.addEventListener('click', () => {
     loadPrompts(true);
+    closeModal();
+  });
+  
+  // Copy template action
+  copyTemplateBtn.addEventListener('click', () => {
+    const templateMarkdown = `---
+title: Prompt Title
+description: Short description of the prompt.
+category: Productivity
+tags: tag1, tag2
+---
+
+Write your prompt template here. Use {variable} or {variable:default} for inputs.`;
+    copyToClipboard(templateMarkdown);
     closeModal();
   });
   
