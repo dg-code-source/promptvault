@@ -7,6 +7,20 @@ let searchQuery = '';
 let hapticsEnabled = localStorage.getItem('pv_haptics') !== 'false'; // default true
 let newServiceWorker = null;
 
+// GitHub Repository Auto-detection
+let repoOwner = 'dg-code-source';
+let repoName = 'promptvault';
+if (window.location.hostname.endsWith('github.io')) {
+  repoOwner = window.location.hostname.split('.')[0];
+  const paths = window.location.pathname.split('/').filter(p => p.length > 0);
+  if (paths.length > 0) {
+    repoName = paths[0];
+  }
+}
+
+// GitHub API Token State
+let githubToken = localStorage.getItem('pv_github_token') || '';
+
 // UI Elements
 const promptsGrid = document.getElementById('prompts-grid');
 const categoryTabs = document.getElementById('category-tabs');
@@ -33,6 +47,9 @@ const draftModal = document.getElementById('draft-modal');
 const draftCloseBtn = document.getElementById('draft-close-btn');
 const draftOverlay = document.getElementById('draft-overlay');
 const draftForm = document.getElementById('draft-form');
+
+// GitHub Token Input Element
+const githubTokenInput = document.getElementById('setting-github-token');
 
 // Initialize settings checkbox state
 vibrateCheckbox.checked = hapticsEnabled;
@@ -325,16 +342,30 @@ function renderPrompts() {
     };
     
     // Copy Markdown template for local drafts
-    let copyMdBtn, deleteBtn;
+    let copyMdBtn, deleteBtn, publishBtn;
     if (p.isDraft) {
-      copyMdBtn = document.createElement('button');
-      copyMdBtn.className = 'btn btn-outline';
-      copyMdBtn.innerHTML = `
+      publishBtn = document.createElement('button');
+      publishBtn.className = 'btn btn-outline';
+      publishBtn.innerHTML = `
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        Publish
+      `;
+      publishBtn.onclick = () => {
+        publishDraftToGitHub(p, publishBtn);
+      };
+
+      copyMdBtn = document.createElement('button');
+      copyMdBtn.className = 'btn btn-outline btn-icon-only';
+      copyMdBtn.setAttribute('aria-label', 'Copy raw markdown');
+      copyMdBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
           <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
         </svg>
-        Copy MD
       `;
       copyMdBtn.onclick = () => {
         const md = `---
@@ -372,6 +403,7 @@ ${p.prompt}`;
     // Assemble buttons based on draft vs repository status
     if (p.isDraft) {
       actions.appendChild(copyBtn);
+      actions.appendChild(publishBtn);
       actions.appendChild(copyMdBtn);
       actions.appendChild(deleteBtn);
     } else {
@@ -584,6 +616,74 @@ function extractVariables(promptText) {
   }));
 }
 
+// Publish Local Draft directly to GitHub API
+function publishDraftToGitHub(prompt, btnElement) {
+  if (!githubToken) {
+    showToast('Please configure your GitHub Access Token in Settings first!', 'error');
+    settingsModal.classList.remove('hidden');
+    return;
+  }
+  
+  const originalHtml = btnElement.innerHTML;
+  btnElement.innerHTML = `
+    <svg class="btn-icon animate-spin" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+      <line x1="12" y1="2" x2="12" y2="6"></line>
+      <line x1="12" y1="18" x2="12" y2="22"></line>
+      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+      <line x1="2" y1="12" x2="6" y2="12"></line>
+      <line x1="18" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+    </svg>
+    Publishing...
+  `;
+  btnElement.disabled = true;
+  
+  const mdContent = `---
+title: ${prompt.title}
+description: ${prompt.description}
+category: ${prompt.category}
+tags: ${prompt.tags ? prompt.tags.join(', ') : ''}
+---
+
+${prompt.prompt}`;
+
+  // UTF-8 safe base64 encoding
+  const b64Content = btoa(unescape(encodeURIComponent(mdContent)));
+  
+  // Dynamic API URL matching the deployed Pages domain or defaulting locally
+  const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/prompts/${prompt.id}.md`;
+  
+  fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `token ${githubToken}`,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      message: `Add prompt '${prompt.title}' via PromptVault PWA`,
+      content: b64Content
+    })
+  })
+  .then(async res => {
+    if (res.status === 201 || res.status === 200) {
+      showToast('Published successfully! Rebuilding site...', 'success');
+      deleteDraft(prompt.id);
+    } else {
+      const errData = await res.json();
+      throw new Error(errData.message || 'API Error');
+    }
+  })
+  .catch(err => {
+    console.error('GitHub API error:', err);
+    showToast(`Publish failed: ${err.message}`, 'error');
+    btnElement.innerHTML = originalHtml;
+    btnElement.disabled = false;
+  });
+}
+
 // Custom Toast notifications (placed at the top)
 function showToast(message, type = 'success') {
   const toast = document.createElement('div');
@@ -693,6 +793,13 @@ tags: tag1, tag2
 Write your prompt template here. Use {variable} or {variable:default} for inputs.`;
     copyToClipboard(templateMarkdown);
     closeModal();
+  });
+
+  // GitHub Access Token setting events
+  githubTokenInput.value = githubToken;
+  githubTokenInput.addEventListener('input', (e) => {
+    githubToken = e.target.value.trim();
+    localStorage.setItem('pv_github_token', githubToken);
   });
   
   // Connection monitoring: auto refresh prompts when network returns
