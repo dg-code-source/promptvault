@@ -195,6 +195,19 @@
           </div>
           <div class="form-group">
             <label for="draft-prompt">Prompt Template</label>
+            <div class="variable-helper-row" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-end;">
+              <div style="flex: 1;">
+                <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Var Name</label>
+                <input type="text" id="helper-var-name" placeholder="e.g., tone" style="font-size: 13px; padding: 6px 8px; width: 100%; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--bg-primary); outline: none;">
+              </div>
+              <div style="flex: 1;">
+                <label style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Default (optional)</label>
+                <input type="text" id="helper-var-default" placeholder="e.g., professional" style="font-size: 13px; padding: 6px 8px; width: 100%; border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--bg-primary); outline: none;">
+              </div>
+              <button type="button" id="helper-insert-btn" class="btn btn-outline" style="font-size: 13px; padding: 0 12px; height: 33px; display: flex; align-items: center; justify-content: center; border-color: var(--border-color); min-width: 70px;">
+                Insert
+              </button>
+            </div>
             <textarea id="draft-prompt" required rows="5" placeholder="Write prompt template here. Use {variables} like {count:3} or {text}."></textarea>
           </div>
           <button type="submit" class="btn btn-dark btn-full">Save Local Draft</button>

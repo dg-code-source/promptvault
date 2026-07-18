@@ -1025,6 +1025,36 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       renderPrompts();
     }
   });
+
+  // Variable Inserter helper events
+  const helperVarNameInput = document.getElementById('helper-var-name');
+  const helperVarDefaultInput = document.getElementById('helper-var-default');
+  const helperInsertBtn = document.getElementById('helper-insert-btn');
+  const draftPromptTextarea = document.getElementById('draft-prompt');
+
+  helperInsertBtn.addEventListener('click', () => {
+    const varName = helperVarNameInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!varName) {
+      showToast('Please enter a variable name!', 'error');
+      return;
+    }
+
+    const defVal = helperVarDefaultInput.value.trim();
+    const varString = defVal ? `{${varName}:${defVal}}` : `{${varName}}`;
+
+    const startPos = draftPromptTextarea.selectionStart;
+    const endPos = draftPromptTextarea.selectionEnd;
+    const text = draftPromptTextarea.value;
+
+    draftPromptTextarea.value = text.substring(0, startPos) + varString + text.substring(endPos);
+    
+    const newCursorPos = startPos + varString.length;
+    draftPromptTextarea.focus();
+    draftPromptTextarea.setSelectionRange(newCursorPos, newCursorPos);
+
+    helperVarNameInput.value = '';
+    helperVarDefaultInput.value = '';
+  });
 }
 
 // Start App
