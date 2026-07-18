@@ -1,0 +1,44 @@
+[
+  {
+    "id": "summarizer",
+    "title": "Text Summarizer",
+    "description": "Condenses long articles or text into key bullet points.",
+    "category": "Writing",
+    "tags": [
+      "writing",
+      "productivity"
+    ],
+    "prompt": "Summarize the following text into exactly {count:3} bullet points:\n\n{text}",
+    "variables": [
+      {
+        "name": "count",
+        "default": "3"
+      },
+      {
+        "name": "text",
+        "default": ""
+      }
+    ]
+  },
+  {
+    "id": "translator",
+    "title": "English to Spanish Translator",
+    "description": "Translates English text into conversational Spanish.",
+    "category": "Translation",
+    "tags": [
+      "languages",
+      "communication"
+    ],
+    "prompt": "Translate the following English text to Spanish using a {tone:friendly} tone:\n\n{text}",
+    "variables": [
+      {
+        "name": "tone",
+        "default": "friendly"
+      },
+      {
+        "name": "text",
+        "default": ""
+      }
+    ]
+  }
+]

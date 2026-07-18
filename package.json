@@ -1,0 +1,23 @@
+{
+  "name": "promptvault",
+  "version": "1.0.0",
+  "description": "Minimalist PWA LLM Prompt Manager",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite --host",
+    "compile": "node scripts/compile-prompts.js",
+    "build": "node scripts/compile-prompts.js && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "pwa",
+    "llm",
+    "prompts",
+    "android"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

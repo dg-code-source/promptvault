@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Background with rounded corners for maskable compliance -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#2c2c2c" />
+  
+  <!-- Accent Ring -->
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#f5f5f7" stroke-width="8" opacity="0.1" />
+
+  <!-- Minimalist terminal prompt symbol '>_' -->
+  <path d="M170 150 L280 256 L170 362" fill="none" stroke="#ffffff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="300" y1="355" x2="380" y2="355" stroke="#ffffff" stroke-width="44" stroke-linecap="round" />
+</svg>
