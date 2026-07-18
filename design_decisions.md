@@ -30,6 +30,8 @@ This document records the architectural blueprints, technical specifications, an
 * **Robust Clipboard Fallback**: The Clipboard API (`navigator.clipboard`) is restricted to HTTPS/localhost in modern browsers. To prevent copy failures when testing locally on HTTP (like Wi-Fi network IPs), the app automatically falls back to an off-screen `<textarea>` and `document.execCommand('copy')` if `navigator.clipboard` is unavailable.
 * **Haptic Settings & Vibration**: Copies trigger a short 50ms pulse `navigator.vibrate(50)`. This can be toggled on/off in the settings panel (saved in `localStorage` as `pv_haptics`) and is wrapped in feature-detection checks to prevent console errors on iOS/Safari (which do not support the Vibration API).
 * **Accidental Clear Protection**: Card inputs contain a "Reset" button. If the user has typed text, clicking reset triggers a confirmation popup to prevent accidental data loss.
+* **Flex Wrapping on Action Buttons**: Local draft cards render up to 5 action buttons. To prevent layout truncation and horizontal overflow on narrow Android viewports, `.card-actions` has `flex-wrap: wrap` enabled so buttons wrap cleanly on small screens.
+* **Full-Width Variable Inputs**: Card variable inputs (`.variable-input`) are styled with `width: 100%` to ensure they span the full width of the card and do not overflow boundaries.
 
 ---
 
@@ -72,6 +74,8 @@ This document records the architectural blueprints, technical specifications, an
   This allows drafts to inherit all UI features (real-time filtering, search, variable form rendering, clipboard copy, haptic settings) automatically.
 * **Draft Card Custom Actions**:
   - **Draft Badge**: Draft cards render a red `DRAFT` label to visually distinguish them.
+  - **Publish**: Integrates directly with the GitHub REST API using a user-configured Personal Access Token stored locally. Encodes the markdown file in Base64 (UTF-8 safe) and performs a PUT request to save the file in the repository's `prompts/` directory. Once published, it automatically deletes the local draft card.
+  - **Edit Draft**: Tapping the Edit button (Pencil icon) pre-fills the creation modal, switches it to "Edit Prompt Draft" mode, and saves modifications back to the `localStorage` drafts array upon form submission.
   - **Copy MD**: Formats the draft's title, description, category, tags, and prompt body into a standard Markdown frontmatter text string, copying it to the clipboard. The user can paste this directly when creating a new file in the GitHub app.
   - **Delete Draft**: Tapping the trash icon deletes the draft from `localStorage` once the compiled version is pushed and synced from GitHub Pages.
 
