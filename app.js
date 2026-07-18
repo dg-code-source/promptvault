@@ -7,6 +7,7 @@ let searchQuery = '';
 let hapticsEnabled = localStorage.getItem('pv_haptics') !== 'false'; // default true
 let newServiceWorker = null;
 let editingDraftId = null; // Track draft being edited
+let editingPromptIsDraft = false; // Track if currently editing draft vs repository prompt
 
 // GitHub Repository Auto-detection
 let repoOwner = 'dg-code-source';
@@ -341,7 +342,20 @@ function renderPrompts() {
     resetBtn.onclick = () => {
       confirmAndResetInputs(card);
     };
-    
+     // Edit Action (Pencil Icon) - available on all cards
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-outline btn-icon-only';
+    editBtn.setAttribute('aria-label', 'Edit prompt');
+    editBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+    `;
+    editBtn.onclick = () => {
+      openEditDraftModal(p);
+    };
+
     // Copy Markdown template for local drafts
     let copyMdBtn, deleteBtn, publishBtn;
     if (p.isDraft) {
@@ -357,19 +371,6 @@ function renderPrompts() {
       `;
       publishBtn.onclick = () => {
         publishDraftToGitHub(p, publishBtn);
-      };
-
-      editBtn = document.createElement('button');
-      editBtn.className = 'btn btn-outline btn-icon-only';
-      editBtn.setAttribute('aria-label', 'Edit draft');
-      editBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-      `;
-      editBtn.onclick = () => {
-        openEditDraftModal(p);
       };
 
       copyMdBtn = document.createElement('button');
@@ -422,13 +423,11 @@ ${p.prompt}`;
       actions.appendChild(copyMdBtn);
       actions.appendChild(deleteBtn);
     } else {
+      actions.appendChild(copyBtn);
+      actions.appendChild(editBtn);
+      actions.appendChild(shareBtn);
       if (p.variables && p.variables.length > 0) {
-        actions.appendChild(copyBtn);
-        actions.appendChild(shareBtn);
         actions.appendChild(resetBtn);
-      } else {
-        actions.appendChild(copyBtn);
-        actions.appendChild(shareBtn);
       }
     }
     
@@ -613,10 +612,13 @@ function deleteDraft(id) {
 // Open Draft Edit Modal
 function openEditDraftModal(prompt) {
   editingDraftId = prompt.id;
+  editingPromptIsDraft = prompt.isDraft === true;
+  
+  const isRepoEdit = !editingPromptIsDraft;
   
   // Set modal header and submit button text
-  document.querySelector('#draft-modal h2').textContent = 'Edit Prompt Draft';
-  document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Changes';
+  document.querySelector('#draft-modal h2').textContent = isRepoEdit ? 'Edit Published Prompt' : 'Edit Prompt Draft';
+  document.querySelector('#draft-modal button[type="submit"]').textContent = isRepoEdit ? 'Publish Updates' : 'Save Changes';
   
   // Prefill values
   document.getElementById('draft-title').value = prompt.title;
@@ -714,6 +716,110 @@ ${prompt.prompt}`;
     showToast(`Publish failed: ${err.message}`, 'error');
     btnElement.innerHTML = originalHtml;
     btnElement.disabled = false;
+  });
+}
+
+// Publish modifications to GitHub for an already published prompt
+function publishRepoUpdateToGitHub(id, title, description, category, tags, promptText, submitBtn) {
+  if (!githubToken) {
+    showToast('Please configure your GitHub Access Token in Settings first!', 'error');
+    settingsModal.classList.remove('hidden');
+    return;
+  }
+
+  const originalHtml = submitBtn.innerHTML;
+  submitBtn.innerHTML = `
+    <svg class="btn-icon animate-spin" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite; margin-right: 6px;">
+      <line x1="12" y1="2" x2="12" y2="6"></line>
+      <line x1="12" y1="18" x2="12" y2="22"></line>
+      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+      <line x1="2" y1="12" x2="6" y2="12"></line>
+      <line x1="18" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+    </svg>
+    Publishing...
+  `;
+  submitBtn.disabled = true;
+
+  const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/prompts/${id}.md`;
+  const headers = {
+    'Authorization': `token ${githubToken}`,
+    'Accept': 'application/vnd.github+json'
+  };
+
+  // Step 1: Query SHA first
+  fetch(url, { headers })
+  .then(async res => {
+    if (res.status === 200) {
+      const data = await res.json();
+      return data.sha;
+    } else if (res.status === 404) {
+      return null;
+    } else {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed fetching file details');
+    }
+  })
+  .then(sha => {
+    // Step 2: Overwrite content via PUT
+    const mdContent = `---
+title: ${title}
+description: ${description}
+category: ${category}
+tags: ${tags ? tags.join(', ') : ''}
+---
+
+${promptText}`;
+
+    const b64Content = btoa(unescape(encodeURIComponent(mdContent)));
+    const body = {
+      message: `Update prompt '${title}' via PromptVault PWA`,
+      content: b64Content
+    };
+    if (sha) {
+      body.sha = sha;
+    }
+
+    return fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+  })
+  .then(async res => {
+    if (res.status === 200 || res.status === 201) {
+      showToast('Updates published to GitHub!', 'success');
+      
+      // Step 3: Optimistic Update (Update local memory so changes display instantly)
+      const promptIndex = prompts.findIndex(pr => pr.id === id);
+      if (promptIndex > -1) {
+        prompts[promptIndex].title = title;
+        prompts[promptIndex].description = description;
+        prompts[promptIndex].category = category;
+        prompts[promptIndex].tags = tags;
+        prompts[promptIndex].prompt = promptText;
+        prompts[promptIndex].variables = extractVariables(promptText);
+      }
+      
+      closeDraftModal();
+      renderCategories();
+      renderPrompts();
+    } else {
+      const err = await res.json();
+      throw new Error(err.message || 'Error updating prompt file');
+    }
+  })
+  .catch(err => {
+    console.error('Publish update error:', err);
+    showToast(`Update failed: ${err.message}`, 'error');
+    submitBtn.innerHTML = originalHtml;
+    submitBtn.disabled = false;
   });
 }
 
@@ -876,17 +982,26 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
     const variables = extractVariables(prompt);
 
     if (editingDraftId) {
-      // Edit mode
-      const draftIndex = drafts.findIndex(d => d.id === editingDraftId);
-      if (draftIndex > -1) {
-        drafts[draftIndex].title = title;
-        drafts[draftIndex].description = description;
-        drafts[draftIndex].category = category;
-        drafts[draftIndex].tags = tags;
-        drafts[draftIndex].prompt = prompt;
-        drafts[draftIndex].variables = variables;
-        localStorage.setItem('pv_drafts', JSON.stringify(drafts));
-        showToast('Local draft updated!', 'success');
+      if (editingPromptIsDraft) {
+        // Edit Mode for Local Draft
+        const draftIndex = drafts.findIndex(d => d.id === editingDraftId);
+        if (draftIndex > -1) {
+          drafts[draftIndex].title = title;
+          drafts[draftIndex].description = description;
+          drafts[draftIndex].category = category;
+          drafts[draftIndex].tags = tags;
+          drafts[draftIndex].prompt = prompt;
+          drafts[draftIndex].variables = variables;
+          localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+          showToast('Local draft updated!', 'success');
+          closeDraftModal();
+          renderCategories();
+          renderPrompts();
+        }
+      } else {
+        // Edit Mode for Repository Prompt (Publish directly to GitHub)
+        const submitBtn = draftForm.querySelector('button[type="submit"]');
+        publishRepoUpdateToGitHub(editingDraftId, title, description, category, tags, prompt, submitBtn);
       }
     } else {
       // Creation mode
@@ -905,11 +1020,10 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       drafts.push(newDraft);
       localStorage.setItem('pv_drafts', JSON.stringify(drafts));
       showToast('Local draft created!', 'success');
+      closeDraftModal();
+      renderCategories();
+      renderPrompts();
     }
-
-    closeDraftModal();
-    renderCategories();
-    renderPrompts();
   });
 }
 
