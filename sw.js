@@ -1,19 +1,40 @@
-const CACHE_NAME = 'promptvault-cache-v1.2.3';
+const CACHE_NAME = 'promptvault-cache-v1.2.4';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './app.css',
   './app.js',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 const DYNAMIC_CACHE_URL = 'prompts.json';
+const FETCH_TIMEOUT = 5000;
 
-// Install event - Cache static assets and skipWaiting immediately
+// Helper to race fetch with a timeout promise
+function fetchWithTimeout(request) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Fetch timeout'));
+    }, FETCH_TIMEOUT);
+    
+    fetch(request)
+      .then(response => {
+        clearTimeout(timeout);
+        resolve(response);
+      })
+      .catch(err => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+  });
+}
+
+// Install event - Cache static assets
 self.addEventListener('install', event => {
   console.log('[Service Worker] Installing version:', CACHE_NAME);
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -40,13 +61,13 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - Network First strategy for instant updates when online, fallback to cache when offline
+// Fetch event - Network First strategy with timeout fallback to cache
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
   
-  if (requestUrl.pathname.endsWith(DYNAMIC_CACHE_URL)) {
+  if (requestUrl.pathname.endsWith('/' + DYNAMIC_CACHE_URL)) {
     event.respondWith(
-      fetch(event.request)
+      fetchWithTimeout(event.request)
         .then(networkResponse => {
           if (networkResponse.status === 200) {
             const cacheCopy = networkResponse.clone();
@@ -61,7 +82,7 @@ self.addEventListener('fetch', event => {
   } else {
     // Strategy for app assets: Network First with Cache Fallback for instant updates on mobile!
     event.respondWith(
-      fetch(event.request)
+      fetchWithTimeout(event.request)
         .then(networkResponse => {
           if (networkResponse.status === 200 && requestUrl.origin === self.location.origin) {
             const cacheCopy = networkResponse.clone();

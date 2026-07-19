@@ -1180,14 +1180,14 @@ function runPromptWithGemini(compiledPrompt) {
       <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
       <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
     </svg>
-    <span>Generating response with Gemini 1.5 Flash...</span>
+    <span>Generating response with Gemini 3.5 Flash...</span>
   `;
   aiResponseBox.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Thinking...</span>';
   copyAiResponseBtn.disabled = true;
 
   aiRunnerModal.classList.remove('hidden');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiApiKey}`;
 
   fetch(url, {
     method: 'POST',
@@ -1212,7 +1212,7 @@ function runPromptWithGemini(compiledPrompt) {
       throw new Error('No text generated in response');
     }
 
-    aiRunnerStatus.innerHTML = `<span style="color: #1a7f37;">✓ Generated successfully with Gemini 1.5 Flash</span>`;
+    aiRunnerStatus.innerHTML = `<span style="color: #1a7f37;">✓ Generated successfully with Gemini 3.5 Flash</span>`;
     aiResponseBox.innerHTML = renderMarkdown(text);
     copyAiResponseBtn.disabled = false;
     copyAiResponseBtn.onclick = () => {

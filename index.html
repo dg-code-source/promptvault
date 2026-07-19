@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PromptVault — A secure, lightweight LLM prompt manager and editor with GitHub sync and Gemini AI execution.">
   <meta name="theme-color" content="#2c2c2c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,6 +21,12 @@
   <link rel="stylesheet" href="./app.css">
 </head>
 <body>
+  <noscript>
+    <div style="padding: 24px; text-align: center; font-family: system-ui, -apple-system, sans-serif; background-color: #ffffff; color: #2c2c2c; border-bottom: 2px solid #2c2c2c;">
+      <h3>JavaScript Required</h3>
+      <p style="margin-top: 8px; font-size: 14px; color: #6e6e73;">PromptVault requires JavaScript to run. Please enable it in your browser settings to continue.</p>
+    </div>
+  </noscript>
   <!-- Update Notification Banner -->
   <div id="update-banner" class="banner hidden">
     <div class="banner-content">
@@ -37,7 +44,7 @@
           <path d="M170 150 L280 256 L170 362" fill="none" stroke="#ffffff" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" />
           <line x1="300" y1="355" x2="380" y2="355" stroke="#ffffff" stroke-width="48" stroke-linecap="round" />
         </svg>
-        <h1>PromptVault <span class="version-badge">v1.2.3</span></h1>
+        <h1>PromptVault <span class="version-badge">v1.2.4</span></h1>
       </div>
       <div class="header-actions" style="display: flex; gap: 8px;">
         <button id="add-draft-btn" class="icon-btn" aria-label="New Draft">
@@ -178,7 +185,7 @@
           <p class="settings-help">Tap if Android PWA shows an older build to instantly clear cache and reload the newest code.</p>
         </div>
         <div class="settings-footer">
-          <p class="app-version">PromptVault v1.2.3</p>
+          <p class="app-version">PromptVault v1.2.4</p>
         </div>
       </div>
     </div>
