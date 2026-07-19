@@ -19,18 +19,22 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 - **AI Semantic Search** — switched embedding endpoint to `models/text-embedding-004` via the `v1` API; search was previously broken due to an incorrect model path.
-- **Gemini generative API** — upgraded to `v1beta` endpoint with `gemini-2.0-flash`; resolves 404 errors on the "Run AI" button.
+- **Gemini generative API endpoint** — upgraded API URL to `v1beta`; the generative model remains `gemini-3.5-flash` (already set in v1.2.4).
+- **App crash on corrupted localStorage** — `pv_chat_providers` key now parsed with `safeJsonParse` instead of bare `JSON.parse`; a corrupted value no longer halts app startup.
+- **Version badge mismatch** — header and settings footer both now display the correct `v1.2.5` version.
+
+### Security
+- **Reverse tabnapping** — `window.open()` in the LLM Chat Launcher now passes `noopener,noreferrer` as the third argument; `aistudio.google.com` link upgraded to `rel="noopener noreferrer"`.
+- **Service Worker cache version** — aligned `sw.js` cache name from the ahead-of-time `v1.2.7` back to `v1.2.5` to keep version signals consistent.
 
 ### Added
 - **Content Security Policy** — `<meta http-equiv="Content-Security-Policy">` header added to `index.html` to restrict resource origins.
-- **HTML output sanitisation** — rendered markdown output is now sanitised before injection to prevent XSS.
 - **Category badge pills** — visual category chips on prompt cards for faster scanning.
 - **OKF index updated** — `prompts/CLAUDE.md` added to the knowledge graph; version bumped to v1.2.5.
 
 ### Changed
 - Prompt creation and edit flow refactored with improved input validation and UX feedback toasts.
 - Improved empty-state messaging and responsive layout adjustments across card grid.
-- Service Worker cache bumped to force clean reload after deploy.
 
 ---
 
