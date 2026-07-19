@@ -32,6 +32,9 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Run Unit Tests
+        run: python -m unittest discover -s tests -p "test_*.py"
+
       - name: Compile Prompts
         run: python scripts/compile-prompts.py
 
