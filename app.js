@@ -126,6 +126,16 @@ function registerServiceWorker() {
       .then(reg => {
         console.log('Service Worker registered with scope:', reg.scope);
         
+        // Force explicit update check on launch
+        reg.update();
+
+        // Re-check for updates whenever user switches back to the app
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            reg.update();
+          }
+        });
+
         // Listen for updates
         reg.addEventListener('updatefound', () => {
           const installingWorker = reg.installing;
