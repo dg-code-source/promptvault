@@ -15,6 +15,25 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v1.2.5] – 2026-07-19
+
+### Fixed
+- **AI Semantic Search** — switched embedding endpoint to `models/text-embedding-004` via the `v1` API; search was previously broken due to an incorrect model path.
+- **Gemini generative API** — upgraded to `v1beta` endpoint with `gemini-2.0-flash`; resolves 404 errors on the "Run AI" button.
+
+### Added
+- **Content Security Policy** — `<meta http-equiv="Content-Security-Policy">` header added to `index.html` to restrict resource origins.
+- **HTML output sanitisation** — rendered markdown output is now sanitised before injection to prevent XSS.
+- **Category badge pills** — visual category chips on prompt cards for faster scanning.
+- **OKF index updated** — `prompts/CLAUDE.md` added to the knowledge graph; version bumped to v1.2.5.
+
+### Changed
+- Prompt creation and edit flow refactored with improved input validation and UX feedback toasts.
+- Improved empty-state messaging and responsive layout adjustments across card grid.
+- Service Worker cache bumped to force clean reload after deploy.
+
+---
+
 ## [v1.2.4] – 2026-07-19
 
 ### Fixed

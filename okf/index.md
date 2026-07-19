@@ -2,7 +2,7 @@
 type: index
 title: PromptVault Knowledge Bundle
 description: OKF (Open Knowledge Format) index for the PromptVault project. Lists all concepts, their types, and relationships to form a navigable knowledge graph for AI agents and human readers.
-version: 1.2.4
+version: 1.2.5
 created: 2026-07-19
 ---
 
@@ -48,6 +48,7 @@ How-to documentation for contributors, maintainers, and AI coding agents.
 | [.github/CLAUDE.md](./.github/CLAUDE.md) | AI agents — GitHub Actions workflow context |
 | [scripts/CLAUDE.md](./scripts/CLAUDE.md) | AI agents — compiler script context |
 | [tests/CLAUDE.md](./tests/CLAUDE.md) | AI agents — test suite context |
+| [prompts/CLAUDE.md](./prompts/CLAUDE.md) | AI agents — prompts directory structure and frontmatter spec |
 
 ---
 
@@ -65,7 +66,7 @@ Project policies covering security, conduct, and licensing.
 ### `type: changelog` — Release History
 | File | Covers |
 |------|--------|
-| [CHANGELOG.md](./CHANGELOG.md) | Feature history from v1.0.0 → v1.2.4 |
+| [CHANGELOG.md](./CHANGELOG.md) | Feature history from v1.0.0 → v1.2.5 |
 
 ---
 
@@ -75,6 +76,7 @@ Project policies covering security, conduct, and licensing.
 okf/index.md (this file)
 │
 ├── prompts/*.md          ← type: prompt (the core data)
+│     ├── CLAUDE.md       ← type: guide (AI agent context for prompts dir)
 │     └── compiled by scripts/compile-prompts.py → prompts.json
 │
 ├── ARCHITECTURE.md       ← type: architecture
