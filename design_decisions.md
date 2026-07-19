@@ -82,3 +82,23 @@ This document records the architectural blueprints, technical specifications, an
 * **Optimistic Local Updates**: Since GitHub Actions deployment takes ~30 seconds to compile, the app performs an "optimistic update" locally inside browser memory immediately upon a successful API write. This ensures the user sees their changes in the UI instantly, without having to wait for the next sync cycle.
 * **Template Variable Inserter Helper**: Typing braces and colons (e.g. `{tone:professional}`) is highly frustrating on mobile keyboards. The draft modal contains a "Var Name" and optional "Default" input helper row. Clicking "Insert" uses text selection ranges (`selectionStart`/`selectionEnd`) to splice the properly formatted placeholder exactly where the user's cursor is placed inside the prompt template textarea, automatically restoring cursor focus afterward.
 
+---
+
+## 7. Dynamic Category & Tag Selection with Custom Creation
+
+* **Category Dropdown + Custom Creation**: Category field in prompt edit/create form presents a `<select>` dropdown pre-filled with all existing categories across prompts + local drafts, alongside an `+ Add New Category` option that conditionally reveals a text input field for custom category names.
+* **Interactive Tag Chip Picker**: Existing tags across all prompts and drafts are normalized to lowercase and displayed as clickable pill chips (`.tag-chip`). Clicking a chip toggles selection.
+* **Inline Custom Tag Input**: Users can type custom tags into an inline text field (supporting comma-separated entries and `Enter` key) to create and select new tag pills dynamically.
+* **GitHub Sync Integration**: Categories and tags are saved as metadata on prompt frontmatter/draft objects. Using "Force Sync from GitHub" re-fetches `prompts.json`, dynamically updating available categories and tags app-wide.
+
+---
+
+## 8. Prompt Deletion via Edit Modal
+
+* **Top-Left Header Placement**: Prompt deletion is accessible via a red trash icon (`#draft-delete-btn`) positioned at the top-left of the Edit Modal header for all prompts (both local drafts and published repository prompts). This placement avoids accidental deletions while keeping UX consistent.
+* **Confirmation Dialog**: Clicking the delete button prompts the user for confirmation (`confirm(...)`) before executing the destructive deletion.
+* **GitHub REST API Deletion**: Deleting a published repository prompt fetches the file's current `sha` checksum from GitHub API and issues a `DELETE` request (`/repos/{owner}/{repo}/contents/prompts/{id}.md`).
+* **Token Guard**: If no Personal Access Token is configured in local settings, deletion requests trigger an error toast and automatically open the Settings modal.
+* **Optimistic Removal**: Upon successful API response, the prompt is optimistically filtered out from in-memory arrays and re-rendered immediately.
+
+

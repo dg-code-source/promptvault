@@ -8,6 +8,7 @@ let hapticsEnabled = localStorage.getItem('pv_haptics') !== 'false'; // default 
 let newServiceWorker = null;
 let editingDraftId = null; // Track draft being edited
 let editingPromptIsDraft = false; // Track if currently editing draft vs repository prompt
+let selectedTagsSet = new Set(); // Selected tags in prompt create/edit modal
 
 // GitHub Repository Auto-detection
 let repoOwner = 'dg-code-source';
@@ -47,8 +48,15 @@ const toastContainer = document.getElementById('toast-container');
 const addDraftBtn = document.getElementById('add-draft-btn');
 const draftModal = document.getElementById('draft-modal');
 const draftCloseBtn = document.getElementById('draft-close-btn');
+const draftDeleteBtn = document.getElementById('draft-delete-btn');
 const draftOverlay = document.getElementById('draft-overlay');
 const draftForm = document.getElementById('draft-form');
+const draftCatSelect = document.getElementById('draft-cat-select');
+const draftCatCustom = document.getElementById('draft-cat-custom');
+const selectedTagsWrapper = document.getElementById('selected-tags-wrapper');
+const newTagInput = document.getElementById('new-tag-input');
+const addTagBtn = document.getElementById('add-tag-btn');
+const existingTagsChips = document.getElementById('existing-tags-chips');
 
 // GitHub Token Input Element
 const githubTokenInput = document.getElementById('setting-github-token');
@@ -609,6 +617,223 @@ function deleteDraft(id) {
   renderPrompts();
 }
 
+// Extract unique categories from loaded prompts + local drafts
+function getAllCategories() {
+  const allPrompts = [...prompts, ...drafts];
+  const cats = [...new Set(allPrompts.map(p => p.category))].filter(Boolean);
+  if (cats.length === 0) return ['General'];
+  return cats;
+}
+
+// Extract unique normalized (lowercased) tags from loaded prompts + local drafts
+function getAllTags() {
+  const allPrompts = [...prompts, ...drafts];
+  const tagSet = new Set();
+  allPrompts.forEach(p => {
+    if (p.tags && Array.isArray(p.tags)) {
+      p.tags.forEach(t => {
+        if (t && typeof t === 'string') {
+          const norm = t.trim().toLowerCase();
+          if (norm) tagSet.add(norm);
+        }
+      });
+    }
+  });
+  return Array.from(tagSet).sort();
+}
+
+// Populate Category Select Dropdown & custom input
+function populateCategorySelect(selectedCategory = '') {
+  if (!draftCatSelect) return;
+  draftCatSelect.innerHTML = '';
+  const categories = getAllCategories();
+
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    draftCatSelect.appendChild(opt);
+  });
+
+  const customOpt = document.createElement('option');
+  customOpt.value = '__custom__';
+  customOpt.textContent = '+ Add New Category';
+  draftCatSelect.appendChild(customOpt);
+
+  if (selectedCategory && categories.includes(selectedCategory)) {
+    draftCatSelect.value = selectedCategory;
+    draftCatCustom.classList.add('hidden');
+    draftCatCustom.value = '';
+  } else if (selectedCategory && selectedCategory.trim()) {
+    draftCatSelect.value = '__custom__';
+    draftCatCustom.value = selectedCategory;
+    draftCatCustom.classList.remove('hidden');
+  } else {
+    draftCatSelect.value = categories[0] || 'General';
+    draftCatCustom.classList.add('hidden');
+    draftCatCustom.value = '';
+  }
+}
+
+// Tag Picker Component Renderer & Interaction Manager
+function renderTagPicker(currentPromptTags = null) {
+  if (!selectedTagsWrapper || !existingTagsChips) return;
+
+  if (currentPromptTags !== null) {
+    selectedTagsSet = new Set(
+      currentPromptTags
+        .map(t => (typeof t === 'string' ? t.trim().toLowerCase() : ''))
+        .filter(Boolean)
+    );
+  }
+
+  // 1. Render selected tags wrapper
+  selectedTagsWrapper.innerHTML = '';
+  if (selectedTagsSet.size === 0) {
+    const placeholder = document.createElement('span');
+    placeholder.className = 'selected-tags-placeholder';
+    placeholder.textContent = 'No tags selected yet (click existing tags below or type a new one)';
+    selectedTagsWrapper.appendChild(placeholder);
+  } else {
+    Array.from(selectedTagsSet).forEach(tag => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip active';
+      chip.textContent = tag;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'tag-chip-remove';
+      removeBtn.innerHTML = '×';
+      removeBtn.setAttribute('aria-label', `Remove tag ${tag}`);
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        selectedTagsSet.delete(tag);
+        renderTagPicker();
+      };
+
+      chip.appendChild(removeBtn);
+      selectedTagsWrapper.appendChild(chip);
+    });
+  }
+
+  // 2. Render available existing tags chips
+  existingTagsChips.innerHTML = '';
+  const allTags = getAllTags();
+  const combinedTags = Array.from(new Set([...allTags, ...Array.from(selectedTagsSet)])).sort();
+
+  if (combinedTags.length === 0) {
+    const noTagsMsg = document.createElement('span');
+    noTagsMsg.style.fontSize = '12px';
+    noTagsMsg.style.color = 'var(--text-muted)';
+    noTagsMsg.textContent = 'No existing tags found. Type above to add one!';
+    existingTagsChips.appendChild(noTagsMsg);
+  } else {
+    combinedTags.forEach(tag => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `tag-chip ${selectedTagsSet.has(tag) ? 'active' : ''}`;
+      chip.textContent = tag;
+      chip.onclick = () => {
+        if (selectedTagsSet.has(tag)) {
+          selectedTagsSet.delete(tag);
+        } else {
+          selectedTagsSet.add(tag);
+        }
+        renderTagPicker();
+      };
+      existingTagsChips.appendChild(chip);
+    });
+  }
+}
+
+// Add New Tag Handler
+function handleAddNewTag() {
+  if (!newTagInput) return;
+  const inputVal = newTagInput.value.trim().toLowerCase();
+  if (!inputVal) return;
+
+  const tagsToAdd = inputVal.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  tagsToAdd.forEach(t => selectedTagsSet.add(t));
+
+  newTagInput.value = '';
+  renderTagPicker();
+}
+
+// Delete a published repository prompt directly via GitHub API
+function deleteRepoPromptFromGitHub(id, title, deleteBtn) {
+  if (!githubToken) {
+    showToast('Please configure your GitHub Access Token in Settings first!', 'error');
+    settingsModal.classList.remove('hidden');
+    return;
+  }
+
+  const originalHtml = deleteBtn.innerHTML;
+  deleteBtn.innerHTML = `
+    <svg class="btn-icon animate-spin" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+      <line x1="12" y1="2" x2="12" y2="6"></line>
+      <line x1="12" y1="18" x2="12" y2="22"></line>
+      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+      <line x1="2" y1="12" x2="6" y2="12"></line>
+      <line x1="18" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+    </svg>
+  `;
+  deleteBtn.disabled = true;
+
+  const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/prompts/${id}.md`;
+  const headers = {
+    'Authorization': `token ${githubToken}`,
+    'Accept': 'application/vnd.github+json'
+  };
+
+  // Step 1: Query SHA first
+  fetch(url, { headers })
+  .then(async res => {
+    if (res.status === 200) {
+      const data = await res.json();
+      return data.sha;
+    } else {
+      const err = await res.json();
+      throw new Error(err.message || 'Could not find file on GitHub');
+    }
+  })
+  .then(sha => {
+    // Step 2: Send DELETE request
+    return fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Delete prompt '${title}' via PromptVault PWA`,
+        sha: sha
+      })
+    });
+  })
+  .then(async res => {
+    if (res.status === 200 || res.status === 204) {
+      showToast('Prompt deleted from GitHub!', 'success');
+      prompts = prompts.filter(p => p.id !== id);
+      closeDraftModal();
+      renderCategories();
+      renderPrompts();
+    } else {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed deleting prompt file');
+    }
+  })
+  .catch(err => {
+    console.error('Delete prompt error:', err);
+    showToast(`Delete failed: ${err.message}`, 'error');
+    deleteBtn.innerHTML = originalHtml;
+    deleteBtn.disabled = false;
+  });
+}
+
 // Open Draft Edit Modal
 function openEditDraftModal(prompt) {
   editingDraftId = prompt.id;
@@ -623,9 +848,29 @@ function openEditDraftModal(prompt) {
   // Prefill values
   document.getElementById('draft-title').value = prompt.title;
   document.getElementById('draft-desc').value = prompt.description;
-  document.getElementById('draft-cat').value = prompt.category;
-  document.getElementById('draft-tags').value = prompt.tags ? prompt.tags.join(', ') : '';
+  populateCategorySelect(prompt.category);
+  renderTagPicker(prompt.tags || []);
   document.getElementById('draft-prompt').value = prompt.prompt;
+
+  // Show top-left delete icon & attach deletion event
+  if (draftDeleteBtn) {
+    draftDeleteBtn.classList.remove('hidden');
+    draftDeleteBtn.onclick = () => {
+      const confirmMsg = prompt.isDraft 
+        ? `Delete local draft '${prompt.title}'?` 
+        : `Are you sure you want to delete '${prompt.title}' from GitHub?`;
+      
+      if (confirm(confirmMsg)) {
+        if (prompt.isDraft) {
+          deleteDraft(prompt.id);
+          closeDraftModal();
+          showToast('Local draft deleted!', 'success');
+        } else {
+          deleteRepoPromptFromGitHub(prompt.id, prompt.title, draftDeleteBtn);
+        }
+      }
+    };
+  }
   
   draftModal.classList.remove('hidden');
 }
@@ -954,6 +1199,12 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
 
   // Draft Modal events
   addDraftBtn.addEventListener('click', () => {
+    populateCategorySelect('');
+    renderTagPicker([]);
+    if (draftDeleteBtn) {
+      draftDeleteBtn.classList.add('hidden');
+      draftDeleteBtn.onclick = null;
+    }
     draftModal.classList.remove('hidden');
   });
 
@@ -961,6 +1212,15 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
     draftModal.classList.add('hidden');
     draftForm.reset();
     editingDraftId = null;
+    selectedTagsSet.clear();
+    if (draftCatCustom) {
+      draftCatCustom.classList.add('hidden');
+      draftCatCustom.value = '';
+    }
+    if (draftDeleteBtn) {
+      draftDeleteBtn.classList.add('hidden');
+      draftDeleteBtn.onclick = null;
+    }
     document.querySelector('#draft-modal h2').textContent = 'Create Prompt Draft';
     document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Local Draft';
   };
@@ -968,17 +1228,49 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   draftCloseBtn.addEventListener('click', closeDraftModal);
   draftOverlay.addEventListener('click', closeDraftModal);
 
+  // Dynamic Category Select Toggle
+  if (draftCatSelect) {
+    draftCatSelect.addEventListener('change', (e) => {
+      if (e.target.value === '__custom__') {
+        draftCatCustom.classList.remove('hidden');
+        draftCatCustom.focus();
+      } else {
+        draftCatCustom.classList.add('hidden');
+        draftCatCustom.value = '';
+      }
+    });
+  }
+
+  // Tag Picker Event Listeners
+  if (addTagBtn) {
+    addTagBtn.addEventListener('click', handleAddNewTag);
+  }
+  if (newTagInput) {
+    newTagInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAddNewTag();
+      }
+    });
+  }
+
   // Draft Creation/Edit Form submit
   draftForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
     const title = document.getElementById('draft-title').value.trim();
     const description = document.getElementById('draft-desc').value.trim();
-    const category = document.getElementById('draft-cat').value.trim() || 'General';
-    const tagsInput = document.getElementById('draft-tags').value.trim();
+    
+    // Resolve Category (Select dropdown or custom text)
+    const selectedCatVal = draftCatSelect ? draftCatSelect.value : 'General';
+    const category = selectedCatVal === '__custom__'
+      ? (draftCatCustom.value.trim() || 'General')
+      : selectedCatVal;
+
+    // Resolve Tags from Tag Picker Set
+    const tags = Array.from(selectedTagsSet);
     const prompt = document.getElementById('draft-prompt').value;
 
-    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(Boolean) : [];
     const variables = extractVariables(prompt);
 
     if (editingDraftId) {

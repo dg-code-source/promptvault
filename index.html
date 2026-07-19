@@ -167,6 +167,14 @@
     <div class="modal-overlay" id="draft-overlay"></div>
     <div class="modal-content">
       <div class="modal-header">
+        <button id="draft-delete-btn" class="icon-btn danger-btn hidden" aria-label="Delete prompt" title="Delete Prompt">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        </button>
         <h2>Create Prompt Draft</h2>
         <button id="draft-close-btn" class="icon-btn" aria-label="Close draft creator">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -186,12 +194,29 @@
             <input type="text" id="draft-desc" required placeholder="e.g., Explains and fixes syntax errors in code.">
           </div>
           <div class="form-group">
-            <label for="draft-cat">Category</label>
-            <input type="text" id="draft-cat" placeholder="e.g., Coding" value="General">
+            <label for="draft-cat-select">Category</label>
+            <select id="draft-cat-select" class="form-select">
+              <!-- Populated dynamically via JS -->
+            </select>
+            <input type="text" id="draft-cat-custom" class="hidden" placeholder="Enter new category name..." style="margin-top: 8px;">
           </div>
           <div class="form-group">
-            <label for="draft-tags">Tags (comma-separated)</label>
-            <input type="text" id="draft-tags" placeholder="e.g., programming, debugging">
+            <label>Tags</label>
+            <div class="tag-picker-container">
+              <div id="selected-tags-wrapper" class="selected-tags-wrapper">
+                <!-- Selected tag pills rendered here -->
+              </div>
+              <div class="add-tag-row">
+                <input type="text" id="new-tag-input" placeholder="Type tag & press Enter or +">
+                <button type="button" id="add-tag-btn" class="btn btn-outline btn-sm">+ Add</button>
+              </div>
+              <div class="available-tags-wrapper">
+                <span class="tags-section-label">Existing tags (click to toggle):</span>
+                <div id="existing-tags-chips" class="tag-chips-grid">
+                  <!-- Dynamic existing tag pills rendered here -->
+                </div>
+              </div>
+            </div>
           </div>
           <div class="form-group">
             <label for="draft-prompt">Prompt Template</label>

@@ -81,6 +81,22 @@ We will create a lightweight project structure containing the front-end applicat
 
 ---
 
+### Category & Tag Selection with Custom Creation
+
+#### [index.html](file:///c:/code/index.html)
+- Replaced static category and tag text inputs in `#draft-form` with a dynamic category select dropdown (`#draft-cat-select`), custom category text input (`#draft-cat-custom`), and a tag chip picker container.
+
+#### [app.css](file:///c:/code/app.css)
+- Added styles for `.form-select`, `.tag-picker-container`, `.selected-tags-wrapper`, `.tag-chip`, `.tag-chip.active`, and `.tag-chip-remove`.
+
+#### [app.js](file:///c:/code/app.js)
+- Implemented `getAllCategories()` and `getAllTags()` to aggregate categories and normalized (lowercased/trimmed) tags from `prompts` and `drafts`.
+- Implemented `populateCategorySelect()` to populate existing categories and toggle an inline text input when `+ Add New Category` is chosen.
+- Implemented `renderTagPicker()` and `handleAddNewTag()` to display clickable tag chips, enable selecting/deselecting tags, and allow typing custom tag pills.
+- Integrated category and tag picker pre-filling into prompt creation and editing modals.
+
+---
+
 ### Prompt Management & Compiler Script
 
 #### [package.json](file:///c:/code/package.json)
