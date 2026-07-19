@@ -7,7 +7,8 @@
     "dev": "vite --host",
     "compile": "node scripts/compile-prompts.js",
     "build": "node scripts/compile-prompts.js && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "python -m unittest discover -s tests -p \"test_*.py\""
   },
   "keywords": [
     "pwa",
