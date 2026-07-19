@@ -176,12 +176,22 @@
           </svg>
         </button>
         <h2>Create Prompt Draft</h2>
-        <button id="draft-close-btn" class="icon-btn" aria-label="Close draft creator">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <button id="draft-expand-btn" class="icon-btn" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          </button>
+          <button id="draft-close-btn" class="icon-btn" aria-label="Close draft creator">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="modal-body">
         <form id="draft-form">
@@ -218,7 +228,7 @@
               </div>
             </div>
           </div>
-          <div class="form-group">
+          <div class="form-group prompt-form-group">
             <label for="draft-prompt">Prompt Template</label>
             <div class="variable-helper-row" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-end;">
               <div style="flex: 1;">

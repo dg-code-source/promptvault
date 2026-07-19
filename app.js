@@ -44,11 +44,15 @@ const updateBanner = document.getElementById('update-banner');
 const updateBtn = document.getElementById('update-btn');
 const toastContainer = document.getElementById('toast-container');
 
+let isDraftFullscreen = localStorage.getItem('pv_draft_fullscreen') === 'true'; // Track modal fullscreen state
+
 // Draft UI Elements
 const addDraftBtn = document.getElementById('add-draft-btn');
 const draftModal = document.getElementById('draft-modal');
+const draftModalContent = document.querySelector('#draft-modal .modal-content');
 const draftCloseBtn = document.getElementById('draft-close-btn');
 const draftDeleteBtn = document.getElementById('draft-delete-btn');
+const draftExpandBtn = document.getElementById('draft-expand-btn');
 const draftOverlay = document.getElementById('draft-overlay');
 const draftForm = document.getElementById('draft-form');
 const draftCatSelect = document.getElementById('draft-cat-select');
@@ -834,6 +838,36 @@ function deleteRepoPromptFromGitHub(id, title, deleteBtn) {
   });
 }
 
+// Dynamic Fullscreen UI Updater
+function updateFullscreenUI() {
+  if (!draftModalContent || !draftExpandBtn) return;
+  if (isDraftFullscreen) {
+    draftModalContent.classList.add('fullscreen');
+    draftExpandBtn.setAttribute('title', 'Minimize to dialog box');
+    draftExpandBtn.setAttribute('aria-label', 'Minimize Fullscreen');
+    draftExpandBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="4 14 10 14 10 20"></polyline>
+        <polyline points="20 10 14 10 14 4"></polyline>
+        <line x1="14" y1="10" x2="21" y2="3"></line>
+        <line x1="3" y1="21" x2="10" y2="14"></line>
+      </svg>
+    `;
+  } else {
+    draftModalContent.classList.remove('fullscreen');
+    draftExpandBtn.setAttribute('title', 'Expand to Fullscreen');
+    draftExpandBtn.setAttribute('aria-label', 'Expand to Fullscreen');
+    draftExpandBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <polyline points="9 21 3 21 3 15"></polyline>
+        <line x1="21" y1="3" x2="14" y2="10"></line>
+        <line x1="3" y1="21" x2="10" y2="14"></line>
+      </svg>
+    `;
+  }
+}
+
 // Open Draft Edit Modal
 function openEditDraftModal(prompt) {
   editingDraftId = prompt.id;
@@ -872,6 +906,7 @@ function openEditDraftModal(prompt) {
     };
   }
   
+  updateFullscreenUI();
   draftModal.classList.remove('hidden');
 }
 
@@ -1205,8 +1240,17 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       draftDeleteBtn.classList.add('hidden');
       draftDeleteBtn.onclick = null;
     }
+    updateFullscreenUI();
     draftModal.classList.remove('hidden');
   });
+
+  if (draftExpandBtn) {
+    draftExpandBtn.addEventListener('click', () => {
+      isDraftFullscreen = !isDraftFullscreen;
+      localStorage.setItem('pv_draft_fullscreen', isDraftFullscreen);
+      updateFullscreenUI();
+    });
+  }
 
   const closeDraftModal = () => {
     draftModal.classList.add('hidden');

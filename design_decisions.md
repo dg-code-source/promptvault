@@ -101,4 +101,12 @@ This document records the architectural blueprints, technical specifications, an
 * **Token Guard**: If no Personal Access Token is configured in local settings, deletion requests trigger an error toast and automatically open the Settings modal.
 * **Optimistic Removal**: Upon successful API response, the prompt is optimistically filtered out from in-memory arrays and re-rendered immediately.
 
+---
+
+## 9. Fullscreen Editor Mode
+
+* **Expand / Minimize Toggle**: An Expand icon button (`#draft-expand-btn`) in the modal header allows users to toggle between a standard centered dialog box and an immersive full-screen editor mode (`.modal-content.fullscreen`).
+* **Flexbox Textarea Expansion**: In Fullscreen mode (`100vw` by `100vh`), the modal body and prompt template textarea (`#draft-prompt`) dynamically flex to fill all available vertical viewport space (`flex: 1`), providing an expanded code editing experience on both desktop and mobile screens.
+* **Persistent User Preference**: The chosen mode is persisted in browser `localStorage` as `pv_draft_fullscreen`, ensuring subsequent prompt creation or editing sessions open directly in the user's preferred view layout.
+
 
