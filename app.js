@@ -1465,6 +1465,27 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
     closeModal();
   });
 
+  // Purge Cache & Load Newest Version action
+  const purgeCacheBtn = document.getElementById('purge-cache-btn');
+  if (purgeCacheBtn) {
+    purgeCacheBtn.addEventListener('click', async () => {
+      showToast('Clearing cache and loading newest version...', 'sync');
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 500);
+    });
+  }
+
   // GitHub Access Token setting events
   githubTokenInput.value = githubToken;
   githubTokenInput.addEventListener('input', (e) => {

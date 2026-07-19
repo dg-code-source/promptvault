@@ -1,4 +1,4 @@
-const CACHE_NAME = 'promptvault-cache-v1.0.6';
+const CACHE_NAME = 'promptvault-cache-v1.1.0';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -10,20 +10,22 @@ const STATIC_ASSETS = [
 
 const DYNAMIC_CACHE_URL = 'prompts.json';
 
-// Install event - Cache static assets
+// Install event - Cache static assets and skipWaiting immediately
 self.addEventListener('install', event => {
+  console.log('[Service Worker] Installing version:', CACHE_NAME);
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('[Service Worker] Caching app shell');
         return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - Clean up old caches
+// Activate event - Delete old caches and claim clients immediately
 self.addEventListener('activate', event => {
+  console.log('[Service Worker] Activating version:', CACHE_NAME);
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -38,11 +40,10 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - Intercept network requests
+// Fetch event - Network First strategy for instant updates when online, fallback to cache when offline
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
   
-  // Strategy for dynamic prompt list: Network First
   if (requestUrl.pathname.endsWith(DYNAMIC_CACHE_URL)) {
     event.respondWith(
       fetch(event.request)
@@ -55,31 +56,22 @@ self.addEventListener('fetch', event => {
           }
           return networkResponse;
         })
-        .catch(() => {
-          // If offline, serve from cache
-          return caches.match(event.request);
-        })
+        .catch(() => caches.match(event.request))
     );
   } else {
-    // Strategy for static assets: Cache First
+    // Strategy for app assets: Network First with Cache Fallback for instant updates on mobile!
     event.respondWith(
-      caches.match(event.request)
-        .then(cachedResponse => {
-          if (cachedResponse) {
-            return cachedResponse;
+      fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse.status === 200 && requestUrl.origin === self.location.origin) {
+            const cacheCopy = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, cacheCopy);
+            });
           }
-          
-          return fetch(event.request).then(networkResponse => {
-            // Cache any new runtime assets that are local
-            if (networkResponse.status === 200 && requestUrl.origin === self.location.origin) {
-              const cacheCopy = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => {
-                cache.put(event.request, cacheCopy);
-              });
-            }
-            return networkResponse;
-          });
+          return networkResponse;
         })
+        .catch(() => caches.match(event.request))
     );
   }
 });
