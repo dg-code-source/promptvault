@@ -1394,6 +1394,7 @@ ${promptText}`;
       }
       
       closeDraftModal();
+      activeCategory = category.toLowerCase();
       renderCategories();
       renderPrompts();
     } else {
@@ -1757,6 +1758,7 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
           localStorage.setItem('pv_drafts', JSON.stringify(drafts));
           showToast('Local draft updated!', 'success');
           closeDraftModal();
+          activeCategory = category.toLowerCase();
           renderCategories();
           renderPrompts();
         }
@@ -1783,6 +1785,7 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       localStorage.setItem('pv_drafts', JSON.stringify(drafts));
       showToast('Local draft created!', 'success');
       closeDraftModal();
+      activeCategory = category.toLowerCase();
       renderCategories();
       renderPrompts();
     }
