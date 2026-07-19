@@ -227,10 +227,13 @@
           </div>
           <div class="form-group">
             <label for="draft-cat-select">Category</label>
-            <select id="draft-cat-select" class="form-select">
-              <!-- Populated dynamically via JS -->
-            </select>
-            <input type="text" id="draft-cat-custom" class="hidden" placeholder="Enter new category name..." style="margin-top: 8px;">
+            <div style="display: flex; gap: 8px;">
+              <select id="draft-cat-select" class="form-select" style="flex: 1;">
+                <!-- Populated dynamically via JS -->
+              </select>
+              <button type="button" id="toggle-custom-cat-btn" class="btn btn-outline btn-sm" style="white-space: nowrap;">+ New Category</button>
+            </div>
+            <input type="text" id="draft-cat-custom" class="hidden" placeholder="Type new category name here..." style="margin-top: 8px;">
           </div>
           <div class="form-group">
             <label>Tags</label>

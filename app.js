@@ -62,6 +62,7 @@ const draftOverlay = document.getElementById('draft-overlay');
 const draftForm = document.getElementById('draft-form');
 const draftCatSelect = document.getElementById('draft-cat-select');
 const draftCatCustom = document.getElementById('draft-cat-custom');
+const toggleCustomCatBtn = document.getElementById('toggle-custom-cat-btn');
 const selectedTagsWrapper = document.getElementById('selected-tags-wrapper');
 const newTagInput = document.getElementById('new-tag-input');
 const addTagBtn = document.getElementById('add-tag-btn');
@@ -787,14 +788,17 @@ function populateCategorySelect(selectedCategory = '') {
     draftCatSelect.value = selectedCategory;
     draftCatCustom.classList.add('hidden');
     draftCatCustom.value = '';
+    if (toggleCustomCatBtn) toggleCustomCatBtn.textContent = '+ New Category';
   } else if (selectedCategory && selectedCategory.trim()) {
     draftCatSelect.value = '__custom__';
     draftCatCustom.value = selectedCategory;
     draftCatCustom.classList.remove('hidden');
+    if (toggleCustomCatBtn) toggleCustomCatBtn.textContent = 'Cancel';
   } else {
     draftCatSelect.value = categories[0] || 'General';
     draftCatCustom.classList.add('hidden');
     draftCatCustom.value = '';
+    if (toggleCustomCatBtn) toggleCustomCatBtn.textContent = '+ New Category';
   }
 }
 
@@ -870,16 +874,34 @@ function renderTagPicker(currentPromptTags = null) {
 }
 
 // Add New Tag Handler
-function handleAddNewTag() {
+function handleAddNewTag(showEmptyWarning = false) {
   if (!newTagInput) return;
   const inputVal = newTagInput.value.trim().toLowerCase();
-  if (!inputVal) return;
+  if (!inputVal) {
+    if (showEmptyWarning) {
+      showToast('Please type a tag name before clicking + Add!', 'error');
+    }
+    return;
+  }
 
   const tagsToAdd = inputVal.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-  tagsToAdd.forEach(t => selectedTagsSet.add(t));
+  let addedCount = 0;
+  tagsToAdd.forEach(t => {
+    if (!selectedTagsSet.has(t)) {
+      selectedTagsSet.add(t);
+      addedCount++;
+    }
+  });
 
   newTagInput.value = '';
   renderTagPicker();
+  newTagInput.focus();
+
+  if (addedCount > 0) {
+    showToast(`Added tag${addedCount > 1 ? 's' : ''}: ${tagsToAdd.join(', ')}`, 'success');
+  } else {
+    showToast('Tag is already added!', 'error');
+  }
 }
 
 // Delete a published repository prompt directly via GitHub API
@@ -1590,6 +1612,9 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       draftCatCustom.classList.add('hidden');
       draftCatCustom.value = '';
     }
+    if (toggleCustomCatBtn) {
+      toggleCustomCatBtn.textContent = '+ New Category';
+    }
     if (draftDeleteBtn) {
       draftDeleteBtn.classList.add('hidden');
       draftDeleteBtn.onclick = null;
@@ -1645,22 +1670,42 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       if (e.target.value === '__custom__') {
         draftCatCustom.classList.remove('hidden');
         draftCatCustom.focus();
+        if (toggleCustomCatBtn) toggleCustomCatBtn.textContent = 'Cancel';
       } else {
         draftCatCustom.classList.add('hidden');
         draftCatCustom.value = '';
+        if (toggleCustomCatBtn) toggleCustomCatBtn.textContent = '+ New Category';
+      }
+    });
+  }
+
+  if (toggleCustomCatBtn) {
+    toggleCustomCatBtn.addEventListener('click', () => {
+      const isHidden = draftCatCustom.classList.contains('hidden');
+      if (isHidden) {
+        draftCatCustom.classList.remove('hidden');
+        draftCatSelect.value = '__custom__';
+        draftCatCustom.focus();
+        toggleCustomCatBtn.textContent = 'Cancel';
+      } else {
+        draftCatCustom.classList.add('hidden');
+        draftCatCustom.value = '';
+        const categories = getAllCategories();
+        draftCatSelect.value = categories[0] || 'General';
+        toggleCustomCatBtn.textContent = '+ New Category';
       }
     });
   }
 
   // Tag Picker Event Listeners
   if (addTagBtn) {
-    addTagBtn.addEventListener('click', handleAddNewTag);
+    addTagBtn.addEventListener('click', () => handleAddNewTag(true));
   }
   if (newTagInput) {
     newTagInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        handleAddNewTag();
+        handleAddNewTag(true);
       }
     });
   }
