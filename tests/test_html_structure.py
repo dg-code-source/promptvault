@@ -74,5 +74,22 @@ class TestHTMLStructure(unittest.TestCase):
         for req_id in required_ids:
             self.assertIn(req_id, parser.ids, f"Required element ID '{req_id}' missing in index.html")
 
+    def test_modal_css_scroll_and_fullscreen_rules(self):
+        css_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../app.css'))
+        self.assertTrue(os.path.exists(css_path), "app.css must exist")
+
+        with open(css_path, 'r', encoding='utf-8') as f:
+            css_content = f.read()
+
+        # 1. Verify modal body overflow-y rule
+        self.assertIn('.modal-body', css_content, "CSS must define .modal-body rules")
+        self.assertIn('overflow-y: auto', css_content, "CSS must include overflow-y: auto for modal bodies")
+        self.assertIn('-webkit-overflow-scrolling: touch', css_content, "CSS must include smooth touch scrolling for mobile modals")
+
+        # 2. Verify mobile fullscreen media query rules
+        self.assertIn('@media (max-width: 640px)', css_content, "CSS must include mobile breakpoint media queries")
+        self.assertIn('100vw', css_content, "CSS must include 100vw fullscreen sizing for mobile dialogs")
+        self.assertIn('100vh', css_content, "CSS must include 100vh fullscreen sizing for mobile dialogs")
+
 if __name__ == '__main__':
     unittest.main()

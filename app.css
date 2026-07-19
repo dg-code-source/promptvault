@@ -464,12 +464,22 @@ textarea.variable-input {
   border: 2px solid var(--border-color);
   border-radius: 8px;
   width: calc(100% - 32px);
-  max-width: 450px;
+  max-width: 520px;
+  max-height: 90vh;
   z-index: 1001;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   transform: scale(0.95);
   transition: transform var(--transition-medium);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(90vh - 65px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal:not(.hidden) .modal-content {
@@ -491,7 +501,7 @@ textarea.variable-input {
 }
 
 #draft-prompt {
-  min-height: 160px;
+  min-height: 180px;
   font-family: var(--font-mono);
   font-size: 13.5px;
   line-height: 1.6;
@@ -530,6 +540,43 @@ textarea.variable-input {
 #draft-modal .modal-content.fullscreen #draft-prompt {
   flex: 1;
   min-height: 240px;
+}
+
+/* Mobile Fullscreen Modals (Settings & Draft Editor) */
+@media (max-width: 640px) {
+  .modal-content {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+
+  .modal-body {
+    flex: 1 !important;
+    max-height: calc(100vh - 65px) !important;
+    overflow-y: auto !important;
+    padding: 16px !important;
+  }
+
+  #draft-modal #draft-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  #draft-modal .prompt-form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #draft-prompt {
+    flex: 1;
+    min-height: 200px !important;
+  }
 }
 
 .modal-header {
