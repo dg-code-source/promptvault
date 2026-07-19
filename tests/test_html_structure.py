@@ -110,5 +110,21 @@ class TestHTMLStructure(unittest.TestCase):
         # 3. Verify .view-toggle-btn styling
         self.assertIn('.view-toggle-btn', css_content)
 
+    def test_settings_modal_always_fullscreen_and_scrollable(self):
+        css_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../app.css'))
+        self.assertTrue(os.path.exists(css_path), "app.css must exist")
+
+        with open(css_path, 'r', encoding='utf-8') as f:
+            css_content = f.read()
+
+        # 1. Verify #settings-modal .modal-content is ALWAYS fullscreen across all screen sizes
+        self.assertIn('#settings-modal .modal-content', css_content, "CSS must define #settings-modal .modal-content rules")
+        self.assertIn('width: 100vw !important', css_content, "#settings-modal must specify width: 100vw !important")
+        self.assertIn('height: 100vh !important', css_content, "#settings-modal must specify height: 100vh !important")
+
+        # 2. Verify #settings-modal .modal-body is scrollable
+        self.assertIn('#settings-modal .modal-body', css_content, "CSS must define #settings-modal .modal-body rules")
+        self.assertIn('overflow-y: auto !important', css_content, "#settings-modal .modal-body must define overflow-y: auto !important")
+
 if __name__ == '__main__':
     unittest.main()
