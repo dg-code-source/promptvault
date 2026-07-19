@@ -2,13 +2,9 @@ const fs = require('fs');
 const path = require('path');
 
 const PROMPTS_DIR = path.join(__dirname, '../prompts');
-const PUBLIC_DIR = path.join(__dirname, '../public');
-const OUTPUT_FILE = path.join(PUBLIC_DIR, 'prompts.json');
+const OUTPUT_FILE = path.join(__dirname, '../prompts.json');
 
 // Ensure output directories exist
-if (!fs.existsSync(PUBLIC_DIR)) {
-  fs.mkdirSync(PUBLIC_DIR, { recursive: true });
-}
 if (!fs.existsSync(PROMPTS_DIR)) {
   fs.mkdirSync(PROMPTS_DIR, { recursive: true });
 }

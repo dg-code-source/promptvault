@@ -968,6 +968,7 @@ function updateFullscreenUI() {
         <line x1="3" y1="21" x2="10" y2="14"></line>
       </svg>
     `;
+  }
 }
 
 // Client-side Markdown Renderer
