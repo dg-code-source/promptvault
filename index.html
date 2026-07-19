@@ -156,6 +156,21 @@
             <input type="password" id="setting-gemini-key" placeholder="AIzaSy...">
           </div>
           <p class="settings-help">Required to run prompts directly inside PromptVault without leaving the app. Get a free API key with your Google Account at <a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
+          <div class="form-group" style="margin-bottom: 4px;">
+            <label for="setting-gemini-model">Model</label>
+            <select id="setting-gemini-model" class="gemini-model-select">
+              <!-- Options injected from GEMINI_MODELS registry by app.js -->
+            </select>
+          </div>
+          <p class="settings-help" id="gemini-model-desc"></p>
+        </div>
+        <div class="settings-group">
+          <h3>LLM Chat Launchers</h3>
+          <p class="settings-help" style="margin-bottom: 10px;">Choose which AI chat buttons appear on every prompt card. Prompt is copied to clipboard automatically when you open a chat.</p>
+          <div id="chat-providers-list">
+            <!-- Provider toggle rows injected by app.js from LLM_CHAT_PROVIDERS registry -->
+          </div>
+          <p class="settings-help" style="margin-top: 8px;">To add a new provider, edit the <code>LLM_CHAT_PROVIDERS</code> array in <code>app.js</code>.</p>
         </div>
         <div class="settings-group">
           <h3>Adding Prompts</h3>
@@ -185,7 +200,7 @@
           <p class="settings-help">Tap if Android PWA shows an older build to instantly clear cache and reload the newest code.</p>
         </div>
         <div class="settings-footer">
-          <p class="app-version">PromptVault v1.2.4</p>
+          <p class="app-version">PromptVault v1.2.6</p>
         </div>
       </div>
     </div>
@@ -293,7 +308,10 @@
     <div class="modal-overlay" id="ai-runner-overlay"></div>
     <div class="modal-content" style="max-width: 720px;">
       <div class="modal-header">
-        <h2>⚡ AI Execution Runner</h2>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <h2>⚡ AI Execution Runner</h2>
+          <span id="ai-runner-model-badge" class="model-badge"></span>
+        </div>
         <button id="ai-runner-close-btn" class="icon-btn" aria-label="Close AI runner">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>

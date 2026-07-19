@@ -675,6 +675,93 @@ textarea.variable-input {
   margin-top: 12px;
 }
 
+/* Gemini model selector in Settings */
+.gemini-model-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  appearance: auto;
+  margin-top: 4px;
+  transition: border-color 0.15s ease;
+}
+.gemini-model-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Model badge chip in AI runner modal header */
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(79,70,229,0.3);
+}
+
+/* LLM Chat buttons on prompt cards */
+.btn-llm-chat {
+  --llm-color: #555;
+  border-color: color-mix(in srgb, var(--llm-color) 40%, var(--border-color));
+  color: var(--llm-color);
+}
+.btn-llm-chat:hover {
+  background-color: color-mix(in srgb, var(--llm-color) 10%, transparent);
+  border-color: var(--llm-color);
+}
+
+/* Settings: LLM Chat Provider toggle rows */
+.chat-provider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.chat-provider-row:last-child {
+  border-bottom: none;
+}
+.chat-provider-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.chat-provider-emoji {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.chat-provider-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.chat-provider-url {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+
 /* Custom CSS Haptic Toggle */
 .switch-label {
   display: flex;

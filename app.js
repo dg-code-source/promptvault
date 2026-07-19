@@ -88,9 +88,43 @@ const draftPromptPreview = document.getElementById('draft-prompt-preview');
 // GitHub Token Input Element
 const githubTokenInput = document.getElementById('setting-github-token');
 
-// Gemini API Key State & UI Elements
+// ─── Gemini Model Registry ──────────────────────────────────────────────────
+// To add a new Google model in the future, simply append one object here.
+// No other code needs to change.
+const GEMINI_MODELS = [
+  {
+    id: 'gemini-2.5-pro',
+    label: 'Gemini 2.5 Pro',
+    description: 'Most capable · best reasoning · slower',
+    supportsSearch: true,
+    isDefault: false
+  },
+  {
+    id: 'gemini-2.5-flash',
+    label: 'Gemini 2.5 Flash',
+    description: 'Fast · balanced quality · recommended',
+    supportsSearch: true,
+    isDefault: false
+  },
+  {
+    id: 'gemini-3.5-flash',
+    label: 'Gemini 3.5 Flash',
+    description: 'Latest · fastest · best for everyday prompts',
+    supportsSearch: true,
+    isDefault: true
+  }
+];
+
+// Gemini API Key & Model State + UI Elements
 let geminiApiKey = localStorage.getItem('pv_gemini_key') || '';
+const savedModelId = localStorage.getItem('pv_gemini_model');
+let selectedGeminiModel = GEMINI_MODELS.find(m => m.id === savedModelId) ||
+                          GEMINI_MODELS.find(m => m.isDefault) ||
+                          GEMINI_MODELS[0];
 const geminiKeyInput = document.getElementById('setting-gemini-key');
+const geminiModelSelect = document.getElementById('setting-gemini-model');
+const geminiModelDesc = document.getElementById('gemini-model-desc');
+const aiRunnerModelBadge = document.getElementById('ai-runner-model-badge');
 const aiRunnerModal = document.getElementById('ai-runner-modal');
 const aiRunnerOverlay = document.getElementById('ai-runner-overlay');
 const aiRunnerCloseBtn = document.getElementById('ai-runner-close-btn');
@@ -98,6 +132,60 @@ const aiRunnerPromptBox = document.getElementById('ai-runner-prompt-box');
 const aiRunnerStatus = document.getElementById('ai-runner-status');
 const aiResponseBox = document.getElementById('ai-response-box');
 const copyAiResponseBtn = document.getElementById('copy-ai-response-btn');
+
+// ─── LLM Chat Provider Registry ────────────────────────────────────────
+// To add a new LLM chat provider in the future, append one object here.
+// No other code needs to change.
+const LLM_CHAT_PROVIDERS = [
+  {
+    id: 'gemini',
+    label: 'Gemini',
+    emoji: '✨',
+    color: '#1a73e8',
+    // {prompt} is replaced with the URL-encoded compiled prompt
+    urlTemplate: 'https://gemini.google.com',
+    copyBeforeOpen: true,
+    defaultEnabled: true
+  },
+  {
+    id: 'claude',
+    label: 'Claude',
+    emoji: '🟠',
+    color: '#c96442',
+    urlTemplate: 'https://claude.ai',
+    copyBeforeOpen: true,
+    defaultEnabled: true
+  },
+  {
+    id: 'chatgpt',
+    label: 'ChatGPT',
+    emoji: '💬',
+    color: '#10a37f',
+    urlTemplate: 'https://chatgpt.com/?q={prompt}',
+    copyBeforeOpen: false,
+    defaultEnabled: false
+  },
+  {
+    id: 'perplexity',
+    label: 'Perplexity',
+    emoji: '🔍',
+    color: '#20b2aa',
+    urlTemplate: 'https://www.perplexity.ai/search?q={prompt}',
+    copyBeforeOpen: false,
+    defaultEnabled: false
+  }
+];
+
+// Load persisted provider visibility; fall back to defaultEnabled per provider
+const _savedProviders = JSON.parse(localStorage.getItem('pv_chat_providers') || 'null');
+const enabledChatProviders = {};
+LLM_CHAT_PROVIDERS.forEach(p => {
+  enabledChatProviders[p.id] = _savedProviders
+    ? (_savedProviders[p.id] !== undefined ? _savedProviders[p.id] : p.defaultEnabled)
+    : p.defaultEnabled;
+});
+
+const chatProvidersListEl = document.getElementById('chat-providers-list');
 
 // Initialize settings checkbox state
 vibrateCheckbox.checked = hapticsEnabled;
@@ -567,20 +655,27 @@ ${p.prompt}`;
       runPromptWithGemini(compiledPrompt);
     };
 
-    // Open Gemini Web Chat Action
-    const geminiChatBtn = document.createElement('button');
-    geminiChatBtn.className = 'btn btn-outline btn-gemini';
-    geminiChatBtn.innerHTML = `✨ Gemini`;
-    geminiChatBtn.onclick = () => {
-      const compiledPrompt = compilePromptText(p.prompt, card);
-      launchGeminiChat(compiledPrompt);
-    };
+    // LLM Chat Buttons — rendered dynamically from enabled providers in registry
+    const chatBtns = LLM_CHAT_PROVIDERS
+      .filter(provider => enabledChatProviders[provider.id])
+      .map(provider => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline btn-llm-chat';
+        btn.style.setProperty('--llm-color', provider.color);
+        btn.innerHTML = `${provider.emoji} ${provider.label}`;
+        btn.title = `Open ${provider.label} with this prompt`;
+        btn.onclick = () => {
+          const compiledPrompt = compilePromptText(p.prompt, card);
+          launchLLMChat(provider, compiledPrompt);
+        };
+        return btn;
+      });
 
     // Assemble buttons based on draft vs repository status
     if (p.isDraft) {
       actions.appendChild(copyBtn);
       actions.appendChild(runAiBtn);
-      actions.appendChild(geminiChatBtn);
+      chatBtns.forEach(b => actions.appendChild(b));
       actions.appendChild(publishBtn);
       actions.appendChild(editBtn);
       actions.appendChild(dupBtn);
@@ -589,7 +684,7 @@ ${p.prompt}`;
     } else {
       actions.appendChild(copyBtn);
       actions.appendChild(runAiBtn);
-      actions.appendChild(geminiChatBtn);
+      chatBtns.forEach(b => actions.appendChild(b));
       actions.appendChild(editBtn);
       actions.appendChild(dupBtn);
       actions.appendChild(shareBtn);
@@ -1135,29 +1230,17 @@ function incrementCopyCount(id) {
 }
 
 // Web Chat Launchers
-function launchGeminiChat(compiledPrompt) {
-  copyToClipboard(compiledPrompt);
-  showToast('Prompt copied! Opening Gemini...', 'success');
-  setTimeout(() => {
-    window.open('https://gemini.google.com', '_blank');
-  }, 300);
-}
-
-function launchChatGPT(compiledPrompt) {
-  copyToClipboard(compiledPrompt);
-  showToast('Prompt copied! Opening ChatGPT...', 'success');
+// Generic LLM Chat Launcher — works for any provider in LLM_CHAT_PROVIDERS
+function launchLLMChat(provider, compiledPrompt) {
   const encoded = encodeURIComponent(compiledPrompt);
-  setTimeout(() => {
-    window.open(`https://chatgpt.com/?q=${encoded}`, '_blank');
-  }, 300);
-}
-
-function launchClaude(compiledPrompt) {
-  copyToClipboard(compiledPrompt);
-  showToast('Prompt copied! Opening Claude...', 'success');
-  setTimeout(() => {
-    window.open('https://claude.ai', '_blank');
-  }, 300);
+  const url = provider.urlTemplate.replace('{prompt}', encoded);
+  if (provider.copyBeforeOpen) {
+    copyToClipboard(compiledPrompt);
+    showToast(`Prompt copied! Opening ${provider.label}...`, 'success');
+  } else {
+    showToast(`Opening ${provider.label}...`, 'info');
+  }
+  setTimeout(() => window.open(url, '_blank'), 300);
 }
 
 // 100% Inside-App Free Gemini AI Execution Runner
@@ -1168,7 +1251,13 @@ function runPromptWithGemini(compiledPrompt) {
     return;
   }
 
+  const model = selectedGeminiModel;
+
+  // Update modal badge to reflect the active model
+  if (aiRunnerModelBadge) aiRunnerModelBadge.textContent = model.label;
+
   aiRunnerPromptBox.textContent = compiledPrompt;
+  const searchNote = model.supportsSearch ? ' · 🌐 Google Search' : '';
   aiRunnerStatus.innerHTML = `
     <svg class="btn-icon animate-spin" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
       <line x1="12" y1="2" x2="12" y2="6"></line>
@@ -1180,14 +1269,14 @@ function runPromptWithGemini(compiledPrompt) {
       <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
       <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
     </svg>
-    <span>Generating response with Gemini 3.5 Flash...</span>
+    <span>Generating with ${model.label}${searchNote}...</span>
   `;
   aiResponseBox.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Thinking...</span>';
   copyAiResponseBtn.disabled = true;
 
   aiRunnerModal.classList.remove('hidden');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${geminiApiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${geminiApiKey}`;
 
   fetch(url, {
     method: 'POST',
@@ -1195,7 +1284,8 @@ function runPromptWithGemini(compiledPrompt) {
     body: JSON.stringify({
       contents: [{
         parts: [{ text: compiledPrompt }]
-      }]
+      }],
+      ...(model.supportsSearch ? { tools: [{ google_search: {} }] } : {})
     })
   })
   .then(async res => {
@@ -1206,13 +1296,23 @@ function runPromptWithGemini(compiledPrompt) {
     return res.json();
   })
   .then(data => {
-    const text = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : '';
-    
+    // Grounded responses can be split across multiple parts — join them all
+    const parts = data.candidates &&
+      data.candidates[0] &&
+      data.candidates[0].content &&
+      data.candidates[0].content.parts;
+    const text = parts ? parts.map(p => p.text || '').join('') : '';
+
     if (!text) {
       throw new Error('No text generated in response');
     }
 
-    aiRunnerStatus.innerHTML = `<span style="color: #1a7f37;">✓ Generated successfully with Gemini 3.5 Flash</span>`;
+    const isGrounded = data.candidates[0].groundingMetadata &&
+      data.candidates[0].groundingMetadata.webSearchQueries &&
+      data.candidates[0].groundingMetadata.webSearchQueries.length > 0;
+    const groundedLabel = isGrounded ? ' · <span title="Response grounded with live Google Search">🌐 Web</span>' : '';
+
+    aiRunnerStatus.innerHTML = `<span style="color: #1a7f37;">✓ Generated with ${model.label}${groundedLabel}</span>`;
     aiResponseBox.innerHTML = renderMarkdown(text);
     copyAiResponseBtn.disabled = false;
     copyAiResponseBtn.onclick = () => {
@@ -1643,6 +1743,75 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       geminiApiKey = e.target.value.trim();
       localStorage.setItem('pv_gemini_key', geminiApiKey);
     });
+  }
+
+  // Gemini Model selector — populate from registry & wire up persistence
+  if (geminiModelSelect) {
+    // Build <option> elements from the central registry
+    GEMINI_MODELS.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.label;
+      if (m.id === selectedGeminiModel.id) opt.selected = true;
+      geminiModelSelect.appendChild(opt);
+    });
+
+    // Show the description of the currently selected model
+    if (geminiModelDesc) {
+      geminiModelDesc.textContent = selectedGeminiModel.description;
+    }
+
+    geminiModelSelect.addEventListener('change', (e) => {
+      const chosen = GEMINI_MODELS.find(m => m.id === e.target.value);
+      if (!chosen) return;
+      selectedGeminiModel = chosen;
+      localStorage.setItem('pv_gemini_model', chosen.id);
+      if (geminiModelDesc) geminiModelDesc.textContent = chosen.description;
+      if (aiRunnerModelBadge) aiRunnerModelBadge.textContent = chosen.label;
+      showToast(`Model set to ${chosen.label}`, 'success');
+    });
+  }
+
+  // LLM Chat Provider toggles — rendered from registry into #chat-providers-list
+  if (chatProvidersListEl) {
+    function renderChatProviderToggles() {
+      chatProvidersListEl.innerHTML = '';
+      LLM_CHAT_PROVIDERS.forEach(provider => {
+        const row = document.createElement('div');
+        row.className = 'chat-provider-row';
+
+        const left = document.createElement('div');
+        left.className = 'chat-provider-info';
+        left.innerHTML = `
+          <span class="chat-provider-emoji">${provider.emoji}</span>
+          <div>
+            <span class="chat-provider-name">${provider.label}</span>
+            <span class="chat-provider-url">${provider.urlTemplate.replace('{prompt}', '…')}</span>
+          </div>`;
+
+        const toggle = document.createElement('label');
+        toggle.className = 'switch-label';
+        toggle.style.minWidth = '44px';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = enabledChatProviders[provider.id];
+        checkbox.addEventListener('change', () => {
+          enabledChatProviders[provider.id] = checkbox.checked;
+          localStorage.setItem('pv_chat_providers', JSON.stringify(enabledChatProviders));
+          renderPrompts();
+          showToast(`${provider.label} ${checkbox.checked ? 'enabled' : 'hidden'}`, 'success');
+        });
+        const slider = document.createElement('span');
+        slider.className = 'slider';
+        toggle.appendChild(checkbox);
+        toggle.appendChild(slider);
+
+        row.appendChild(left);
+        row.appendChild(toggle);
+        chatProvidersListEl.appendChild(row);
+      });
+    }
+    renderChatProviderToggles();
   }
 
   // AI Runner Modal Controls
