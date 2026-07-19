@@ -28,8 +28,17 @@ def compile_prompt_text_simulated(template, input_values_map):
             user_val = default_val
         escaped_name = re.escape(var_name)
         pattern = re.compile(r'\{' + escaped_name + r'(?::[^}]*)?\}')
-        compiled = pattern.sub(str(user_val), compiled)
+        compiled = pattern.sub(lambda m: str(user_val), compiled)
     return compiled
+
+def slugify(text):
+    text = str(text).lower()
+    text = re.sub(r'\s+', '-', text)
+    text = re.sub(r'[^\w\-]+', '', text)
+    text = re.sub(r'\-\-+', '-', text)
+    text = re.sub(r'^-+', '', text)
+    text = re.sub(r'-+$', '', text)
+    return text
 
 def resolve_category(selected_val, custom_input_val):
     if selected_val == '__custom__':
@@ -90,6 +99,15 @@ class TestJSAppLogic(unittest.TestCase):
         self.assertEqual(len(selected), 0)
         new_tags = process_tags(selected, 'brand-new-tag')
         self.assertEqual(new_tags, ['brand-new-tag'])
+
+    def test_variable_compilation_special_chars(self):
+        template = 'Regex string: {var}'
+        compiled = compile_prompt_text_simulated(template, {'var': r'\g<0> and \1'})
+        self.assertEqual(compiled, r'Regex string: \g<0> and \1')
+
+    def test_slugify(self):
+        self.assertEqual(slugify('My Cool Prompt!'), 'my-cool-prompt')
+        self.assertEqual(slugify('  SEO & Marketing 2024  '), 'seo-marketing-2024')
 
 if __name__ == '__main__':
     unittest.main()

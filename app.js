@@ -9,6 +9,8 @@ let newServiceWorker = null;
 let editingDraftId = null; // Track draft being edited
 let editingPromptIsDraft = false; // Track if currently editing draft vs repository prompt
 let selectedTagsSet = new Set(); // Selected tags in prompt create/edit modal
+let isFetchingPrompts = false;
+let isSubmittingDraft = false;
 
 // GitHub Repository Auto-detection
 let repoOwner = 'dg-code-source';
@@ -96,6 +98,8 @@ async function init() {
 
 // Fetch Prompts JSON
 async function loadPrompts(forceFetch = false) {
+  if (isFetchingPrompts) return;
+  isFetchingPrompts = true;
   try {
     // Force sync works by appending a timestamp to bypass HTTP cache
     const url = forceFetch ? `./prompts.json?t=${Date.now()}` : './prompts.json';
@@ -116,6 +120,8 @@ async function loadPrompts(forceFetch = false) {
       promptsGrid.innerHTML = '';
       showEmptyState('Could not load prompts', 'Are you offline? Check your connection and try again.');
     }
+  } finally {
+    isFetchingPrompts = false;
   }
 }
 
@@ -188,6 +194,9 @@ function renderCategories() {
     btn.className = 'tab-btn';
     btn.textContent = cat;
     btn.dataset.category = cat.toLowerCase();
+    if (activeCategory === cat.toLowerCase()) {
+      btn.classList.add('active');
+    }
     categoryTabs.appendChild(btn);
   });
 }
@@ -585,7 +594,7 @@ function compilePromptText(template, cardElement) {
     // Matches {varName} or {varName:anything}
     const escapedVarName = varName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const regex = new RegExp('\\{' + escapedVarName + '(?::[^}]*)?\\}', 'g');
-    compiled = compiled.replace(regex, userVal);
+    compiled = compiled.replace(regex, () => userVal);
   });
   
   return compiled;
@@ -1190,8 +1199,19 @@ function extractVariables(promptText) {
   }));
 }
 
+// Helper: Slugify text for clean filenames
+function slugify(text) {
+  return text.toString().toLowerCase()
+    .replace(/\s+/g, '-')           // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+    .replace(/^-+/, '')             // Trim - from start of text
+    .replace(/-+$/, '');            // Trim - from end of text
+}
+
 // Publish Local Draft directly to GitHub API
 function publishDraftToGitHub(prompt, btnElement) {
+  if (btnElement.disabled) return;
   if (!githubToken) {
     showToast('Please configure your GitHub Access Token in Settings first!', 'error');
     settingsModal.classList.remove('hidden');
@@ -1226,8 +1246,11 @@ ${prompt.prompt}`;
   // UTF-8 safe base64 encoding
   const b64Content = btoa(unescape(encodeURIComponent(mdContent)));
   
+  const safeTitle = slugify(prompt.title) || 'prompt';
+  const repoId = `${safeTitle}-${Date.now().toString().slice(-6)}`;
+  
   // Dynamic API URL matching the deployed Pages domain or defaulting locally
-  const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/prompts/${prompt.id}.md`;
+  const url = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/prompts/${repoId}.md`;
   
   fetch(url, {
     method: 'PUT',
@@ -1244,6 +1267,8 @@ ${prompt.prompt}`;
   .then(async res => {
     if (res.status === 201 || res.status === 200) {
       showToast('Published successfully! Rebuilding site...', 'success');
+      const publishedPrompt = { ...prompt, id: repoId, isDraft: false };
+      prompts.unshift(publishedPrompt);
       deleteDraft(prompt.id);
     } else {
       const errData = await res.json();
@@ -1259,7 +1284,7 @@ ${prompt.prompt}`;
 }
 
 // Publish modifications to GitHub for an already published prompt
-function publishRepoUpdateToGitHub(id, title, description, category, tags, promptText, submitBtn) {
+async function publishRepoUpdateToGitHub(id, title, description, category, tags, promptText, submitBtn) {
   if (!githubToken) {
     showToast('Please configure your GitHub Access Token in Settings first!', 'error');
     settingsModal.classList.remove('hidden');
@@ -1289,7 +1314,7 @@ function publishRepoUpdateToGitHub(id, title, description, category, tags, promp
   };
 
   // Step 1: Query SHA first
-  fetch(url, { headers })
+  return fetch(url, { headers })
   .then(async res => {
     if (res.status === 200) {
       const data = await res.json();
@@ -1641,11 +1666,14 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   }
 
   // Draft Creation/Edit Form submit
-  draftForm.addEventListener('submit', (e) => {
+  draftForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (isSubmittingDraft) return;
+    isSubmittingDraft = true;
 
-    const title = document.getElementById('draft-title').value.trim();
-    const description = document.getElementById('draft-desc').value.trim();
+    try {
+      const title = document.getElementById('draft-title').value.trim();
+      const description = document.getElementById('draft-desc').value.trim();
     
     // Resolve Category (Select dropdown or custom text)
     const selectedCatVal = draftCatSelect ? draftCatSelect.value : 'General';
@@ -1682,7 +1710,7 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       } else {
         // Edit Mode for Repository Prompt (Publish directly to GitHub)
         const submitBtn = draftForm.querySelector('button[type="submit"]');
-        publishRepoUpdateToGitHub(editingDraftId, title, description, category, tags, prompt, submitBtn);
+        await publishRepoUpdateToGitHub(editingDraftId, title, description, category, tags, prompt, submitBtn);
       }
     } else {
       // Creation mode
@@ -1704,6 +1732,9 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       closeDraftModal();
       renderCategories();
       renderPrompts();
+    }
+    } finally {
+      isSubmittingDraft = false;
     }
   });
 

@@ -54,10 +54,20 @@ function compilePromptTextSimulated(template, inputValuesMap) {
     }
     const escapedVarName = v.name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const regex = new RegExp('\\{' + escapedVarName + '(?::[^}]*)?\\}', 'g');
-    compiled = compiled.replace(regex, userVal);
+    compiled = compiled.replace(regex, () => userVal);
   });
 
   return compiled;
+}
+
+// 7. Test Slugify
+function slugify(text) {
+  return text.toString().toLowerCase()
+    .replace(/\s+/g, '-')           // Replace spaces with -
+    .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+    .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+    .replace(/^-+/, '')             // Trim - from start of text
+    .replace(/-+$/, '');            // Trim - from end of text
 }
 
 // 3. Test Category Resolution Logic
@@ -176,4 +186,15 @@ assert.strictEqual(freshlyAddedTags.length, 1);
 assert.strictEqual(freshlyAddedTags[0], 'brand-new-tag');
 console.log('✓ Test 8 Passed: Tag state isolation and modal reset');
 
-console.log('\nAll 8 JavaScript Unit Tests Passed Successfully!');
+// Test 9: Variable compilation with regex special characters
+const template9 = 'Regex string: {var}';
+const compiledWithSpecialChars = compilePromptTextSimulated(template9, { var: '$& and $1' });
+assert.strictEqual(compiledWithSpecialChars, 'Regex string: $& and $1', 'Should treat special regex characters as literal strings');
+console.log('✓ Test 9 Passed: Variable compilation with special characters');
+
+// Test 10: Slugify for ID generation
+assert.strictEqual(slugify('My Cool Prompt!'), 'my-cool-prompt');
+assert.strictEqual(slugify('  SEO & Marketing 2024  '), 'seo-marketing-2024');
+console.log('✓ Test 10 Passed: Slugify filename generation');
+
+console.log('\nAll 10 JavaScript Unit Tests Passed Successfully!');
