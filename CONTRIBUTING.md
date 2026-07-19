@@ -1,4 +1,15 @@
-﻿# Contributing to PromptVault
+---
+type: guide
+title: Contributing to PromptVault
+description: How to add prompts (no code required) and how to contribute code changes, including setup, workflow, constraints, and commit format.
+related:
+  - ARCHITECTURE.md
+  - design_decisions.md
+  - CLAUDE.md
+  - okf/index.md
+---
+
+# Contributing to PromptVault
 
 There are two ways to contribute: **adding prompts** (no coding required) and **contributing code**.
 
@@ -134,3 +145,13 @@ test: add coverage for duplicate variable extraction
 - Code that introduces React, Vue, or any frontend framework
 - New npm runtime dependencies
 - Hardcoded credentials of any kind
+
+---
+
+## Related
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — System architecture and data flows
+- [design_decisions.md](./design_decisions.md) — Authoritative architectural decisions log
+- [SECURITY.md](./SECURITY.md) — Token scoping and security model
+- [CLAUDE.md](./CLAUDE.md) — AI agent guide for this codebase
+- [okf/index.md](./okf/index.md) — OKF knowledge graph index

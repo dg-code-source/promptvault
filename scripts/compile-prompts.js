@@ -20,6 +20,7 @@ function parseMarkdownFile(filePath, filename) {
   let description = '';
   let category = 'General';
   let tags = [];
+  let promptType = 'prompt'; // OKF type field default
   let promptBody = '';
   
   // 1. Check for frontmatter
@@ -42,7 +43,9 @@ function parseMarkdownFile(filePath, filename) {
           val = val.slice(1, -1);
         }
         
-        if (key === 'title') {
+        if (key === 'type') {
+          promptType = val;
+        } else if (key === 'title') {
           title = val;
         } else if (key === 'description') {
           description = val;
@@ -130,6 +133,7 @@ function parseMarkdownFile(filePath, filename) {
 
   return {
     id,
+    type: promptType,
     title: title.trim(),
     description: description.trim(),
     category: category.trim(),

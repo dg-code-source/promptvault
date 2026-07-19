@@ -1,4 +1,5 @@
 ---
+type: prompt
 title: English to Spanish Translator
 description: Translates English text into conversational Spanish.
 category: Translation

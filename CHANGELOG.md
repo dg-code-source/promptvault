@@ -1,3 +1,11 @@
+---
+type: changelog
+title: PromptVault – Changelog
+description: All notable changes to PromptVault from v1.0.0 onwards, following Keep a Changelog format and Semantic Versioning.
+related:
+  - okf/index.md
+---
+
 # Changelog
 
 All notable changes to PromptVault are documented here.

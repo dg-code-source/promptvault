@@ -1,3 +1,13 @@
+---
+type: policy
+title: PromptVault – Code of Conduct
+description: Community standards for PromptVault contributors, based on Contributor Covenant v2.1.
+related:
+  - CONTRIBUTING.md
+  - SECURITY.md
+  - okf/index.md
+---
+
 # Contributor Covenant Code of Conduct
 
 ## Our Pledge

@@ -1,3 +1,13 @@
+---
+type: policy
+title: PromptVault – Security Policy
+description: Security model for PromptVault including token storage, scope recommendations, threat model, and vulnerability reporting instructions.
+related:
+  - CONTRIBUTING.md
+  - CODE_OF_CONDUCT.md
+  - okf/index.md
+---
+
 # Security Policy
 
 ## Security Model
@@ -77,3 +87,12 @@ The following are **not considered security issues** for this project:
 - Tokens being visible in browser DevTools (by design — no backend to secure them server-side)
 - Self-XSS (the user deliberately injecting scripts into their own browser)
 - Rate limiting by GitHub or Google (third-party API concerns)
+
+---
+
+## Related
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — How to contribute to the project
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) — Community standards
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — System architecture (explains why no backend)
+- [okf/index.md](./okf/index.md) — OKF knowledge graph index

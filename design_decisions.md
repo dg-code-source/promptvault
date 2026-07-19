@@ -1,3 +1,13 @@
+---
+type: architecture
+title: PromptVault – Technical Design Specifications & Decisions Log
+description: Authoritative record of every architectural, UX, and technical decision made during the design and implementation of PromptVault.
+related:
+  - ARCHITECTURE.md
+  - CONTRIBUTING.md
+  - okf/index.md
+---
+
 # PromptVault: Technical Design Specifications & Decisions Log
 
 This document records the architectural blueprints, technical specifications, and key design decisions made during the design and implementation of **PromptVault**.
@@ -141,4 +151,11 @@ This document records the architectural blueprints, technical specifications, an
   * Clicking `⚡ Run AI` opens `#ai-runner-modal` overlay drawer directly inside PromptVault.
   * Sends compiled prompt text to Google Gemini REST API (`gemini-3.5-flash`), streams/renders the response live in formatted Markdown, and provides a 1-tap `Copy AI Response` button.
 
+---
 
+## Related
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — System diagrams and data flow
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — How to contribute prompts or code
+- [CLAUDE.md](./CLAUDE.md) — AI agent guide for this codebase
+- [okf/index.md](./okf/index.md) — OKF knowledge graph index

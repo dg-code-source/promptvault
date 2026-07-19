@@ -1,4 +1,5 @@
 ---
+type: prompt
 title: Text Summarizer
 description: Condenses long articles or text into key bullet points.
 category: Writing

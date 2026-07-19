@@ -1,4 +1,5 @@
 ---
+type: prompt
 title: Prompt Title
 description: Enter a short description here of what this prompt does.
 category: Productivity

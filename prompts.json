@@ -1,8 +1,36 @@
 [
   {
+    "id": "CLAUDE",
+    "type": "prompt",
+    "title": "File Naming Convention",
+    "description": "- Use lowercase `kebab-case`: `email-rewriter.md`, `code-refactor.md`",
+    "category": "General",
+    "tags": [],
+    "prompt": "---\ntitle: Prompt Title\ndescription: A short, one-line description of what this prompt does.\ncategory: Productivity\ntags: writing, ai, summarization\n---\n\nYour prompt body goes here. Use {variable_name} for simple placeholders\nor {variable_name:default value} to pre-fill a default.\n\nExample:\nSummarize the following {content_type:article} in {count:5} bullet points:\n\n{text}\npython scripts/compile-prompts.py\n# or\nnpm run compile",
+    "variables": [
+      {
+        "name": "variable_name",
+        "default": "default value"
+      },
+      {
+        "name": "content_type",
+        "default": "article"
+      },
+      {
+        "name": "count",
+        "default": "5"
+      },
+      {
+        "name": "text",
+        "default": ""
+      }
+    ]
+  },
+  {
     "id": "draft-1784367067840",
+    "type": "prompt",
     "title": "10-VideoSummary",
-    "description": "Summarise youtube video in 10 limes",
+    "description": "Summarise youtube video in 10 lines",
     "category": "Youtube",
     "tags": [],
     "prompt": "Summarise the video in {Lines:10} bullet points. Each bullet point has {Word:10} words. Bold the important words or phrase bullet points",
@@ -19,11 +47,12 @@
   },
   {
     "id": "draft-1784374147658",
+    "type": "prompt",
     "title": "Video-bullet-summary",
-    "description": "Video bullet points summary with sectiond",
+    "description": "Video bullet points summary with sections",
     "category": "Youtube",
     "tags": [],
-    "prompt": "Here's the full updated prompt:\n\n---\n\n**Summarize this YouTube video in exactly  {Bullets:100} bullet points, organized under category headings.**\n\nRules:\n- **Group the {Bullets:100} bullets under category headings** based on the video's natural topics or sections. No limit on the number of headings — use as many as the video's content genuinely supports.\n- **Within each category**, bullets must read as one continuous flow, not isolated facts — each bullet should connect logically to the one before it using natural linking language (e.g., \"this leads to,\" \"because of this,\" \"next,\" \"as a result\"). A new heading can start a fresh thread.\n- **Bold** the 1-2 most important words or key phrase in each bullet (the term or idea a skimmer should catch even if reading quickly).\n- Follow the video's own structure and reasoning when ordering categories — if it's chronological, follow that order; if it builds a non-linear argument, order categories by logical flow instead.\n- Optimize for **quick skimming**: someone reading only the bolded words and headings should get the gist of the entire video.\n- Distribute the  {Bullets:100} bullets across headings roughly in proportion to how much time/depth the video spends on each topic — don't force equal counts per heading.\n- No intro, outro, or meta-commentary — just the headings and bullets.",
+    "prompt": "**Summarize this YouTube video in exactly  {Bullets:100} bullet points, organized under category headings.**\n\nRules:\n- **Group the {Bullets:100} bullets under category headings** based on the video's natural topics or sections. No limit on the number of headings — use as many as the video's content genuinely supports.\n- **Within each category**, bullets must read as one continuous flow, not isolated facts — each bullet should connect logically to the one before it using natural linking language (e.g., \"this leads to,\" \"because of this,\" \"next,\" \"as a result\"). A new heading can start a fresh thread.\n- **Bold** the 1-2 most important words or key phrase in each bullet (the term or idea a skimmer should catch even if reading quickly).\n- Follow the video's own structure and reasoning when ordering categories — if it's chronological, follow that order; if it builds a non-linear argument, order categories by logical flow instead.\n- Optimize for **quick skimming**: someone reading only the bolded words and headings should get the gist of the entire video.\n- Distribute the  {Bullets:100} bullets across headings roughly in proportion to how much time/depth the video spends on each topic — don't force equal counts per heading.\n- No intro, outro, or meta-commentary — just the headings and bullets.",
     "variables": [
       {
         "name": "Bullets",
@@ -33,6 +62,7 @@
   },
   {
     "id": "summarizer",
+    "type": "prompt",
     "title": "Text Summarizer",
     "description": "Condenses long articles or text into key bullet points.",
     "category": "Writing",
@@ -54,6 +84,7 @@
   },
   {
     "id": "translator",
+    "type": "prompt",
     "title": "English to Spanish Translator",
     "description": "Translates English text into conversational Spanish.",
     "category": "Translation",

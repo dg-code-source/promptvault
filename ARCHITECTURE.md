@@ -1,4 +1,14 @@
-﻿# PromptVault – System Architecture
+---
+type: architecture
+title: PromptVault – System Architecture
+description: Describes how the system components connect, how data flows through the app, and why key architectural decisions were made.
+related:
+  - design_decisions.md
+  - CONTRIBUTING.md
+  - okf/index.md
+---
+
+# PromptVault – System Architecture
 
 This document describes how the system components connect, how data flows through the app, and why key architectural decisions were made.
 
@@ -231,3 +241,12 @@ Browser compares sw.js byte-by-byte with cached version
 | API integration | GitHub REST API | Direct from browser, no proxy needed |
 | Styling | Vanilla CSS | No dependencies, full control |
 | Testing | Python unittest | Built-in, no install, CI-friendly |
+
+---
+
+## Related
+
+- [design_decisions.md](./design_decisions.md) — *Why* each decision was made (rationale & tradeoffs)
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — How to add prompts or contribute code
+- [CLAUDE.md](./CLAUDE.md) — AI agent guide: constraints, localStorage keys, commands
+- [okf/index.md](./okf/index.md) — Full OKF knowledge graph index for this project

@@ -16,6 +16,7 @@ def parse_markdown_file(filepath, filename):
     description = ""
     category = "General"
     tags = []
+    prompt_type = "prompt"  # OKF type field default
     prompt_body = ""
     
     # 1. Parse frontmatter if present
@@ -35,7 +36,9 @@ def parse_markdown_file(filepath, filename):
                 if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
                     val = val[1:-1]
                 
-                if key == 'title':
+                if key == 'type':
+                    prompt_type = val
+                elif key == 'title':
                     title = val
                 elif key == 'description':
                     description = val
@@ -106,6 +109,7 @@ def parse_markdown_file(filepath, filename):
     
     return {
         "id": prompt_id,
+        "type": prompt_type,
         "title": title,
         "description": description,
         "category": category,
