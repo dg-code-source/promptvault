@@ -183,6 +183,18 @@ function renderCategories() {
   const allPrompts = [...prompts, ...drafts];
   const categories = [...new Set(allPrompts.map(p => p.category))].filter(Boolean);
   
+  // Sync active state for static tabs
+  const allTab = categoryTabs.querySelector('[data-category="all"]');
+  const favTab = categoryTabs.querySelector('[data-category="favorites"]');
+  if (allTab) {
+    if (activeCategory === 'all') allTab.classList.add('active');
+    else allTab.classList.remove('active');
+  }
+  if (favTab) {
+    if (activeCategory === 'favorites') favTab.classList.add('active');
+    else favTab.classList.remove('active');
+  }
+
   // Clear dynamic tabs (everything after the static 'Favorites' tab)
   const staticTabsCount = 2; // All, Favorites
   while (categoryTabs.children.length > staticTabsCount) {
