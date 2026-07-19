@@ -1241,7 +1241,7 @@ function launchLLMChat(provider, compiledPrompt) {
   } else {
     showToast(`Opening ${provider.label}...`, 'info');
   }
-  setTimeout(() => window.open(url, '_blank'), 300);
+  setTimeout(() => window.open(url, '_blank', 'noopener,noreferrer'), 300);
 }
 
 // 100% Inside-App Free Gemini AI Execution Runner
