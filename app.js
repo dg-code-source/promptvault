@@ -1532,6 +1532,10 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
 
   // Draft Modal events
   addDraftBtn.addEventListener('click', () => {
+    editingDraftId = null;
+    editingPromptIsDraft = true;
+    selectedTagsSet.clear();
+    draftForm.reset();
     populateCategorySelect('');
     renderTagPicker([]);
     if (draftDeleteBtn) {
@@ -1539,6 +1543,8 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       draftDeleteBtn.onclick = null;
     }
     updateFullscreenUI();
+    document.querySelector('#draft-modal h2').textContent = 'Create Prompt Draft';
+    document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Local Draft';
     draftModal.classList.remove('hidden');
   });
 

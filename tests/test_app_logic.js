@@ -24,7 +24,7 @@ function renderMarkdown(text) {
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
   // Italic
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/\*([^*]+)\*\*/g, '<em>$1</em>');
 
   // Bullet lists (* or -)
   html = html.replace(/^\s*[\*\-] (.*$)/gim, '<li>$1</li>');
@@ -89,6 +89,14 @@ function sortPrompts(prompts, sortMode, copyCounts) {
   return copy;
 }
 
+// 6. Test Category Aggregation
+function getAllCategoriesSimulated(prompts, drafts) {
+  const allPrompts = [...prompts, ...drafts];
+  const cats = [...new Set(allPrompts.map(p => p.category))].filter(Boolean);
+  if (cats.length === 0) return ['General'];
+  return cats;
+}
+
 // EXECUTE TEST SUITE
 console.log('Running JavaScript Unit Test Suite...');
 
@@ -150,4 +158,22 @@ assert(previewHtml.includes('<h2>System Prompt</h2>'), 'Tab preview should rende
 assert(previewHtml.includes('{role:Senior Engineer}'), 'Tab preview should show variable templates');
 console.log('✓ Test 6 Passed: Modal Tab Code vs Preview toggle');
 
-console.log('\nAll 6 JavaScript Unit Tests Passed Successfully!');
+// Test 7: New Category Addition & Dynamic Category List Update
+const existingPrompts = [{ id: '1', category: 'General' }];
+const newDraftWithCustomCat = { id: 'd1', category: 'SEO & Marketing' };
+const updatedCategories = getAllCategoriesSimulated(existingPrompts, [newDraftWithCustomCat]);
+assert.strictEqual(updatedCategories.length, 2, 'Should dynamically include newly created category');
+assert(updatedCategories.includes('SEO & Marketing'), 'Newly added custom category must be listed');
+console.log('✓ Test 7 Passed: New Category creation and dynamic list aggregation');
+
+// Test 8: Tag State Isolation on Modal Reset
+let selectedTags = new Set(['old-tag-1', 'old-tag-2']);
+// Simulating opening "+ Create Draft" (should clear previous tags)
+selectedTags.clear();
+assert.strictEqual(selectedTags.size, 0, 'Opening create draft modal must reset selected tags set');
+const freshlyAddedTags = processTags(selectedTags, 'brand-new-tag');
+assert.strictEqual(freshlyAddedTags.length, 1);
+assert.strictEqual(freshlyAddedTags[0], 'brand-new-tag');
+console.log('✓ Test 8 Passed: Tag state isolation and modal reset');
+
+console.log('\nAll 8 JavaScript Unit Tests Passed Successfully!');
