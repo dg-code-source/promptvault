@@ -1720,11 +1720,19 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       const title = document.getElementById('draft-title').value.trim();
       const description = document.getElementById('draft-desc').value.trim();
     
-    // Resolve Category (Select dropdown or custom text)
+    // Resolve Category (Custom input box if visible & filled, else select dropdown)
+    const customCatVal = draftCatCustom ? draftCatCustom.value.trim() : '';
+    const isCustomVisible = draftCatCustom && !draftCatCustom.classList.contains('hidden');
     const selectedCatVal = draftCatSelect ? draftCatSelect.value : 'General';
-    const category = selectedCatVal === '__custom__'
-      ? (draftCatCustom.value.trim() || 'General')
-      : selectedCatVal;
+    
+    let category = 'General';
+    if (isCustomVisible && customCatVal) {
+      category = customCatVal;
+    } else if (selectedCatVal === '__custom__') {
+      category = customCatVal || 'General';
+    } else {
+      category = selectedCatVal;
+    }
 
     // Automatically commit any pending tag typed in input box
     handleAddNewTag();
