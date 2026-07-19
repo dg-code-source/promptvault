@@ -143,6 +143,14 @@
           <p class="settings-help">Required to publish drafts directly. The token stays secure in your device's local browser memory.</p>
         </div>
         <div class="settings-group">
+          <h3>Google Gemini AI (100% Inside-App Execution)</h3>
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label for="setting-gemini-key">Gemini API Key</label>
+            <input type="password" id="setting-gemini-key" placeholder="AIzaSy...">
+          </div>
+          <p class="settings-help">Required to run prompts directly inside PromptVault without leaving the app. Get a free API key with your Google Account at <a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a>.</p>
+        </div>
+        <div class="settings-group">
           <h3>Adding Prompts</h3>
           <button id="copy-template-btn" class="btn btn-outline btn-full">
             <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -259,6 +267,39 @@
           </div>
           <button type="submit" class="btn btn-dark btn-full">Save Local Draft</button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Runner Inside-App Execution Modal -->
+  <div id="ai-runner-modal" class="modal hidden">
+    <div class="modal-overlay" id="ai-runner-overlay"></div>
+    <div class="modal-content" style="max-width: 720px;">
+      <div class="modal-header">
+        <h2>⚡ AI Execution Runner</h2>
+        <button id="ai-runner-close-btn" class="icon-btn" aria-label="Close AI runner">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+        <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 4px; display: block;">Prompt Executing:</label>
+        <div id="ai-runner-prompt-box" style="padding: 10px 12px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--border-radius); font-size: 13px; margin-bottom: 16px; max-height: 100px; overflow-y: auto; font-family: var(--font-mono);">
+          <!-- Active compiled prompt text shown here -->
+        </div>
+        <div id="ai-runner-status" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; margin-bottom: 12px;">
+          <!-- Status icon & text -->
+        </div>
+        <div id="ai-response-box" class="markdown-preview" style="padding: 16px; background-color: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: var(--border-radius); min-height: 180px; overflow-y: auto;">
+          <!-- Generated AI markdown response rendered here -->
+        </div>
+        <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end;">
+          <button id="copy-ai-response-btn" class="btn btn-dark" disabled>
+            Copy AI Response
+          </button>
+        </div>
       </div>
     </div>
   </div>

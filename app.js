@@ -73,6 +73,17 @@ const draftPromptPreview = document.getElementById('draft-prompt-preview');
 // GitHub Token Input Element
 const githubTokenInput = document.getElementById('setting-github-token');
 
+// Gemini API Key State & UI Elements
+let geminiApiKey = localStorage.getItem('pv_gemini_key') || '';
+const geminiKeyInput = document.getElementById('setting-gemini-key');
+const aiRunnerModal = document.getElementById('ai-runner-modal');
+const aiRunnerOverlay = document.getElementById('ai-runner-overlay');
+const aiRunnerCloseBtn = document.getElementById('ai-runner-close-btn');
+const aiRunnerPromptBox = document.getElementById('ai-runner-prompt-box');
+const aiRunnerStatus = document.getElementById('ai-runner-status');
+const aiResponseBox = document.getElementById('ai-response-box');
+const copyAiResponseBtn = document.getElementById('copy-ai-response-btn');
+
 // Initialize settings checkbox state
 vibrateCheckbox.checked = hapticsEnabled;
 
@@ -495,9 +506,29 @@ ${p.prompt}`;
       };
     }
     
+    // Run AI Action (100% Inside App Gemini Runner)
+    const runAiBtn = document.createElement('button');
+    runAiBtn.className = 'btn btn-outline btn-ai-run';
+    runAiBtn.innerHTML = `⚡ Run AI`;
+    runAiBtn.onclick = () => {
+      const compiledPrompt = compilePromptText(p.prompt, card);
+      runPromptWithGemini(compiledPrompt);
+    };
+
+    // Open Gemini Web Chat Action
+    const geminiChatBtn = document.createElement('button');
+    geminiChatBtn.className = 'btn btn-outline btn-gemini';
+    geminiChatBtn.innerHTML = `✨ Gemini`;
+    geminiChatBtn.onclick = () => {
+      const compiledPrompt = compilePromptText(p.prompt, card);
+      launchGeminiChat(compiledPrompt);
+    };
+
     // Assemble buttons based on draft vs repository status
     if (p.isDraft) {
       actions.appendChild(copyBtn);
+      actions.appendChild(runAiBtn);
+      actions.appendChild(geminiChatBtn);
       actions.appendChild(publishBtn);
       actions.appendChild(editBtn);
       actions.appendChild(dupBtn);
@@ -505,6 +536,8 @@ ${p.prompt}`;
       actions.appendChild(deleteBtn);
     } else {
       actions.appendChild(copyBtn);
+      actions.appendChild(runAiBtn);
+      actions.appendChild(geminiChatBtn);
       actions.appendChild(editBtn);
       actions.appendChild(dupBtn);
       actions.appendChild(shareBtn);
@@ -993,6 +1026,99 @@ function incrementCopyCount(id) {
   localStorage.setItem('pv_copy_counts', JSON.stringify(copyCounts));
 }
 
+// Web Chat Launchers
+function launchGeminiChat(compiledPrompt) {
+  copyToClipboard(compiledPrompt);
+  showToast('Prompt copied! Opening Gemini...', 'success');
+  setTimeout(() => {
+    window.open('https://gemini.google.com', '_blank');
+  }, 300);
+}
+
+function launchChatGPT(compiledPrompt) {
+  copyToClipboard(compiledPrompt);
+  showToast('Prompt copied! Opening ChatGPT...', 'success');
+  const encoded = encodeURIComponent(compiledPrompt);
+  setTimeout(() => {
+    window.open(`https://chatgpt.com/?q=${encoded}`, '_blank');
+  }, 300);
+}
+
+function launchClaude(compiledPrompt) {
+  copyToClipboard(compiledPrompt);
+  showToast('Prompt copied! Opening Claude...', 'success');
+  setTimeout(() => {
+    window.open('https://claude.ai', '_blank');
+  }, 300);
+}
+
+// 100% Inside-App Free Gemini AI Execution Runner
+function runPromptWithGemini(compiledPrompt) {
+  if (!geminiApiKey) {
+    showToast('Please configure your Gemini API Key in Settings first!', 'error');
+    settingsModal.classList.remove('hidden');
+    return;
+  }
+
+  aiRunnerPromptBox.textContent = compiledPrompt;
+  aiRunnerStatus.innerHTML = `
+    <svg class="btn-icon animate-spin" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+      <line x1="12" y1="2" x2="12" y2="6"></line>
+      <line x1="12" y1="18" x2="12" y2="22"></line>
+      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+      <line x1="2" y1="12" x2="6" y2="12"></line>
+      <line x1="18" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+    </svg>
+    <span>Generating response with Gemini 1.5 Flash...</span>
+  `;
+  aiResponseBox.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">Thinking...</span>';
+  copyAiResponseBtn.disabled = true;
+
+  aiRunnerModal.classList.remove('hidden');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{ text: compiledPrompt }]
+      }]
+    })
+  })
+  .then(async res => {
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error ? err.error.message : 'API Request Failed');
+    }
+    return res.json();
+  })
+  .then(data => {
+    const text = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : '';
+    
+    if (!text) {
+      throw new Error('No text generated in response');
+    }
+
+    aiRunnerStatus.innerHTML = `<span style="color: #1a7f37;">✓ Generated successfully with Gemini 1.5 Flash</span>`;
+    aiResponseBox.innerHTML = renderMarkdown(text);
+    copyAiResponseBtn.disabled = false;
+    copyAiResponseBtn.onclick = () => {
+      copyToClipboard(text);
+      showToast('AI response copied to clipboard!', 'success');
+    };
+  })
+  .catch(err => {
+    console.error('Gemini API Error:', err);
+    aiRunnerStatus.innerHTML = `<span style="color: #dc2626;">⚠ Generation failed: ${err.message}</span>`;
+    aiResponseBox.innerHTML = `<div style="color: #dc2626; padding: 8px;">Error generating AI response. Please check your Gemini API Key in Settings.</div>`;
+  });
+}
+
 // Open Draft Edit Modal
 function openEditDraftModal(prompt) {
   editingDraftId = prompt.id;
@@ -1345,6 +1471,24 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
     githubToken = e.target.value.trim();
     localStorage.setItem('pv_github_token', githubToken);
   });
+
+  // Gemini API Key setting events
+  if (geminiKeyInput) {
+    geminiKeyInput.value = geminiApiKey;
+    geminiKeyInput.addEventListener('input', (e) => {
+      geminiApiKey = e.target.value.trim();
+      localStorage.setItem('pv_gemini_key', geminiApiKey);
+    });
+  }
+
+  // AI Runner Modal Controls
+  if (aiRunnerCloseBtn && aiRunnerOverlay && aiRunnerModal) {
+    const closeAiRunnerModal = () => {
+      aiRunnerModal.classList.add('hidden');
+    };
+    aiRunnerCloseBtn.addEventListener('click', closeAiRunnerModal);
+    aiRunnerOverlay.addEventListener('click', closeAiRunnerModal);
+  }
   
   // Connection monitoring: auto refresh prompts when network returns
   window.addEventListener('online', () => {

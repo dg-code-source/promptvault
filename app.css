@@ -1088,3 +1088,44 @@ textarea.variable-input {
   background-color: var(--accent-color);
   color: #ffffff;
 }
+
+/* AI Launcher & Runner Buttons */
+.btn-gemini {
+  background: linear-gradient(135deg, #1a73e8, #4285f4);
+  color: #ffffff !important;
+  border-color: #1a73e8 !important;
+}
+
+.btn-gemini:hover {
+  background: linear-gradient(135deg, #1557b0, #1a73e8);
+}
+
+.btn-chatgpt {
+  background-color: #10a37f;
+  color: #ffffff !important;
+  border-color: #10a37f !important;
+}
+
+.btn-chatgpt:hover {
+  background-color: #0d8a6a;
+}
+
+.btn-claude {
+  background-color: #d97706;
+  color: #ffffff !important;
+  border-color: #d97706 !important;
+}
+
+.btn-claude:hover {
+  background-color: #b45309;
+}
+
+.btn-ai-run {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff !important;
+  border-color: #4f46e5 !important;
+}
+
+.btn-ai-run:hover {
+  background: linear-gradient(135deg, #4338ca, #6d28d9);
+}

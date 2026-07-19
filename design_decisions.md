@@ -131,4 +131,14 @@ This document records the architectural blueprints, technical specifications, an
 * **Card Body View Toggle**: Prompt cards feature a `Code` / `Preview` button in the category header to toggle between raw code view and rendered formatted HTML.
 * **Editor Modal Tab Bar**: `#draft-modal` features `Edit Code` and `Preview Markdown` tabs so users can preview formatted template text while editing.
 
+---
+
+## 13. Live LLM Execution (Web Chat Launchers & Inside-App Gemini Runner)
+
+* **1-Tap Web Chat Launcher**: Clicking `✨ Gemini` on any prompt card compiles all user-filled variables, copies the final text to the clipboard with haptic feedback, triggers a toast notification, and opens `https://gemini.google.com` in a new tab ready for 1-tap paste with your logged-in Google account.
+* **100% Inside-App Free Gemini AI Execution**:
+  * Users can enter a free Google Gemini API Key in Settings (obtained from `aistudio.google.com`).
+  * Clicking `⚡ Run AI` opens `#ai-runner-modal` overlay drawer directly inside PromptVault.
+  * Sends compiled prompt text to Google Gemini REST API (`gemini-1.5-flash`), streams/renders the response live in formatted Markdown, and provides a 1-tap `Copy AI Response` button.
+
 
