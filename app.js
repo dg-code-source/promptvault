@@ -95,14 +95,14 @@ const GEMINI_MODELS = [
   {
     id: 'gemini-2.5-pro',
     label: 'Gemini 2.5 Pro',
-    description: 'Most capable · best reasoning · slower',
+    description: 'Most capable · best reasoning · slower · retiring Oct 2026',
     supportsSearch: true,
     isDefault: false
   },
   {
     id: 'gemini-2.5-flash',
     label: 'Gemini 2.5 Flash',
-    description: 'Fast · balanced quality · recommended',
+    description: 'Fast · balanced quality · retiring Oct 2026',
     supportsSearch: true,
     isDefault: false
   },
