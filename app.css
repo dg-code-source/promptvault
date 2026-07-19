@@ -326,6 +326,10 @@ body {
   color: var(--text-secondary);
   letter-spacing: 1px;
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 42px; /* Dedicated clearance to prevent overlap with favorite star */
 }
 
 .card-title {

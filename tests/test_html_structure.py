@@ -91,5 +91,24 @@ class TestHTMLStructure(unittest.TestCase):
         self.assertIn('100vw', css_content, "CSS must include 100vw fullscreen sizing for mobile dialogs")
         self.assertIn('100vh', css_content, "CSS must include 100vh fullscreen sizing for mobile dialogs")
 
+    def test_card_header_clearance_to_prevent_element_overlap(self):
+        css_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../app.css'))
+        self.assertTrue(os.path.exists(css_path), "app.css must exist")
+
+        with open(css_path, 'r', encoding='utf-8') as f:
+            css_content = f.read()
+
+        # 1. Verify .card-category includes flex layout and dedicated padding-right clearance for favorite star
+        self.assertIn('.card-category', css_content)
+        self.assertIn('padding-right: 42px', css_content, "card-category must define padding-right clearance to prevent overlap with favorite star")
+
+        # 2. Verify .card-star-btn top-right absolute positioning
+        self.assertIn('.card-star-btn', css_content)
+        self.assertIn('position: absolute', css_content)
+        self.assertIn('right: 14px', css_content)
+
+        # 3. Verify .view-toggle-btn styling
+        self.assertIn('.view-toggle-btn', css_content)
+
 if __name__ == '__main__':
     unittest.main()

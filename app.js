@@ -264,9 +264,6 @@ function renderPrompts() {
     // Header
     const cat = document.createElement('div');
     cat.className = 'card-category';
-    cat.style.display = 'flex';
-    cat.style.alignItems = 'center';
-    cat.style.justifyContent = 'space-between';
     
     const catText = document.createElement('span');
     catText.textContent = p.category;
