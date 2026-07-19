@@ -107,8 +107,8 @@ const GEMINI_MODELS = [
     isDefault: false
   },
   {
-    id: 'gemini-3.5-flash',
-    label: 'Gemini 3.5 Flash',
+    id: 'gemini-2.5-flash-lite',
+    label: 'Gemini 2.5 Flash-Lite',
     description: 'Latest · fastest · best for everyday prompts',
     supportsSearch: true,
     isDefault: true
@@ -221,6 +221,7 @@ async function loadPrompts(forceFetch = false) {
     if (prompts.length === 0) {
       promptsGrid.innerHTML = '';
       showEmptyState('Could not load prompts', 'Are you offline? Check your connection and try again.');
+      emptyActionBtn.classList.add('hidden');
     }
   } finally {
     isFetchingPrompts = false;
@@ -271,10 +272,11 @@ updateBtn.addEventListener('click', () => {
   if (newServiceWorker) {
     newServiceWorker.postMessage({ action: 'skipWaiting' });
     updateBanner.classList.add('hidden');
-    // Reload page once new worker is activated
+    // Reload page once new worker is activated — { once: true } prevents listener accumulation
+    // if the user clicks "Update Now" multiple times before the controller changes
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
-    });
+    }, { once: true });
   }
 });
 
@@ -354,8 +356,9 @@ function renderPrompts() {
   if (filtered.length === 0) {
     if (activeCategory === 'favorites') {
       showEmptyState('No favorites yet', 'Tap the star icon on any prompt card to add it to your favorites list.');
-      emptyActionBtn.classList.add('hidden'); // No action button needed
-    } else {
+      emptyActionBtn.classList.add('hidden');
+    } else if (searchQuery.trim().length > 0) {
+      // There is an active search query — offer to clear it
       showEmptyState('No prompts found', 'Try adjusting your search keywords or view another category.');
       emptyActionBtn.classList.remove('hidden');
       emptyActionBtn.textContent = 'Clear Search';
@@ -363,6 +366,18 @@ function renderPrompts() {
         searchInput.value = '';
         searchQuery = '';
         searchClearBtn.classList.add('hidden');
+        renderPrompts();
+      };
+    } else {
+      // No search, no results (e.g. empty category) — offer to go back to All
+      showEmptyState('No prompts found', 'Try viewing another category or sync from GitHub.');
+      emptyActionBtn.classList.remove('hidden');
+      emptyActionBtn.textContent = 'View All Prompts';
+      emptyActionBtn.onclick = () => {
+        activeCategory = 'all';
+        categoryTabs.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        const allTab = categoryTabs.querySelector('[data-category="all"]');
+        if (allTab) allTab.classList.add('active');
         renderPrompts();
       };
     }
@@ -518,6 +533,7 @@ function renderPrompts() {
       const finalPrompt = compilePromptText(p.prompt, card);
       copyToClipboard(finalPrompt);
       // Update the copy count badge in-place — avoids full re-render that would destroy variable inputs
+      // Read count AFTER incrementCopyCount so the badge reflects the new value
       const count = copyCounts[p.id] || 0;
       let badge = card.querySelector('.copy-count-badge');
       if (!badge) {
@@ -877,6 +893,7 @@ function closeDraftModal() {
   draftModal.classList.add('hidden');
   draftForm.reset();
   editingDraftId = null;
+  editingPromptIsDraft = false;
   selectedTagsSet.clear();
   if (draftCatCustom) {
     draftCatCustom.classList.add('hidden');
@@ -1277,11 +1294,14 @@ function runPromptWithGemini(compiledPrompt) {
 
   aiRunnerModal.classList.remove('hidden');
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${geminiApiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent`;
 
   fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': geminiApiKey
+    },
     body: JSON.stringify({
       contents: [{
         parts: [{ text: compiledPrompt }]
@@ -1725,7 +1745,7 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
         }
       }
       setTimeout(() => {
-        window.location.reload(true);
+        window.location.reload();
       }, 500);
     });
   }
@@ -1826,6 +1846,7 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   
   // Connection monitoring: auto refresh prompts when network returns
   window.addEventListener('online', () => {
+    showToast('Connection restored. Syncing prompts...', 'info');
     loadPrompts(true);
   });
   

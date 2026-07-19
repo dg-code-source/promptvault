@@ -66,7 +66,7 @@ Project policies covering security, conduct, and licensing.
 ### `type: changelog` — Release History
 | File | Covers |
 |------|--------|
-| [CHANGELOG.md](./CHANGELOG.md) | Feature history from v1.0.0 → v1.2.5 |
+| [CHANGELOG.md](./CHANGELOG.md) | Feature history from v1.0.0 → v1.2.6 |
 
 ---
 

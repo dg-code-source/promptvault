@@ -59,7 +59,7 @@
 | `pv_haptics` | string `'true'/'false'` | Vibration toggle |
 | `pv_github_token` | string | GitHub Personal Access Token |
 | `pv_gemini_key` | string | Google Gemini API key |
-| `pv_gemini_model` | string | Selected Gemini model ID (e.g. `gemini-3.5-flash`) |
+| `pv_gemini_model` | string | Selected Gemini model ID (e.g. `gemini-2.5-flash-lite`) |
 | `pv_chat_providers` | JSON object | `{id: boolean}` map of enabled LLM chat provider buttons |
 | `pv_draft_fullscreen` | string `'true'/'false'` | Editor modal fullscreen preference |
 
@@ -93,7 +93,7 @@ npm run build
 ```js
 let repoOwner = 'dg-code-source';
 let repoName = 'promptvault';
-const CACHE_NAME = 'promptvault-cache-v1.2.7';
+const CACHE_NAME = 'promptvault-cache-v1.2.6';
 ```
 
 ---

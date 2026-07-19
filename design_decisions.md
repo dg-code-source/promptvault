@@ -149,7 +149,7 @@ This document records the architectural blueprints, technical specifications, an
 * **100% Inside-App Free Gemini AI Execution**:
   * Users can enter a free Google Gemini API Key in Settings (obtained from `aistudio.google.com`).
   * Clicking `⚡ Run AI` opens `#ai-runner-modal` overlay drawer directly inside PromptVault.
-  * Sends compiled prompt text to Google Gemini REST API (`gemini-3.5-flash`), streams/renders the response live in formatted Markdown, and provides a 1-tap `Copy AI Response` button.
+  * Sends compiled prompt text to Google Gemini REST API (`gemini-2.5-flash-lite`), streams/renders the response live in formatted Markdown, and provides a 1-tap `Copy AI Response` button.
 
 ---
 

@@ -68,8 +68,9 @@ function parseMarkdownFile(filePath, filename) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
-      // Extract title from first H1/H2 heading
-      if ((line.startsWith('#') || line.startsWith('##')) && titleIndex === -1) {
+      // Extract title from first H1/H2 heading only. startsWith('##') was dead code since '#' always
+      // matches '##' first; and plain '#' also matched H3+ by accident. Regex restricts to 1–2 hashes + space.
+      if (/^#{1,2}\s/.test(line) && titleIndex === -1) {
         title = line.replace(/^#+\s*/, '');
         titleIndex = i;
         continue;

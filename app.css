@@ -11,6 +11,8 @@
   --favorite-color: #e28704;
   --favorite-bg: #fffbf2;
   --toast-success: #1a7f37;
+  --toast-error: #dc2626;
+  --toast-info: #1a73e8;
   
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
@@ -841,6 +843,21 @@ textarea.variable-input {
   background-color: #ffffff;
   color: var(--text-primary);
   border-color: var(--border-color);
+}
+
+.toast.toast-success {
+  background-color: var(--toast-success);
+  border-color: var(--toast-success);
+}
+
+.toast.toast-error {
+  background-color: var(--toast-error);
+  border-color: var(--toast-error);
+}
+
+.toast.toast-info {
+  background-color: var(--toast-info);
+  border-color: var(--toast-info);
 }
 
 .toast-icon {

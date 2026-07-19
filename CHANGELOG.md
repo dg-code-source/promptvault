@@ -15,11 +15,33 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [v1.2.6] – 2026-07-19
+
+### Fixed
+- **Default Gemini model corrected** — `gemini-3.5-flash` (non-existent) replaced with `gemini-2.5-flash-lite`; the "Run AI" button now works without a 404 error.
+- **`toast-info` / `toast-error` / `toast-success` CSS** — three type-specific toast rules added; previously all toast types rendered with an identical dark background regardless of type.
+- **Compiler heading fallback (Python + JS)** — `startsWith('#') or startsWith('##')` replaced with a `^#{1,2}\s` regex; the `##` branch was dead code and the condition also silently promoted H3+ headings to title.
+- **Empty state action button state leak** — "Clear Search" text and stale `onclick` no longer persist when the offline error empty state is shown; non-search empty views now correctly display a "View All Prompts" button instead.
+- **`controllerchange` listener accumulation** — the SW update listener now uses `{ once: true }`, preventing duplicate `reload()` calls if the user clicks "Update Now" multiple times.
+- **Deprecated `reload(true)` argument** — `window.location.reload(true)` changed to `window.location.reload()`; the `forceReload` argument was removed from the WHATWG spec and silently ignored.
+- **Online reconnect feedback** — `window.addEventListener('online')` now shows an immediate "Connection restored. Syncing prompts…" info toast before the fetch resolves.
+- **`editingPromptIsDraft` state not reset on modal close** — stale `true` value could cause a re-opened creation modal to incorrectly use the draft-edit code path.
+- **Copy count badge off-by-one** — badge was read before `incrementCopyCount` updated the map; now reads the correct post-increment value.
+- **iOS `apple-touch-icon` SVG** — changed to `icon-192.png`; iOS Safari silently ignores SVG for Add to Home Screen icons.
+- **`manifest.json` icon purpose** — `"any maskable"` on a single SVG entry split into two separate entries (SVG → `"any"`, 512px PNG → `"maskable"`) for correct Android adaptive icon selection.
+
+### Changed
+- Service Worker cache bumped to `promptvault-cache-v1.2.6` to force a clean reload for all existing users.
+- Version badge in app header and settings footer updated to `v1.2.6`.
+- `design_decisions.md` and `CHANGELOG.md` v1.2.4–v1.2.5 entries updated with corrected Gemini model ID.
+
+---
+
 ## [v1.2.5] – 2026-07-19
 
 ### Fixed
 - **AI Semantic Search** — switched embedding endpoint to `models/text-embedding-004` via the `v1` API; search was previously broken due to an incorrect model path.
-- **Gemini generative API endpoint** — upgraded API URL to `v1beta`; the generative model remains `gemini-3.5-flash` (already set in v1.2.4).
+- **Gemini generative API endpoint** — upgraded API URL to `v1beta`; the generative model remains `gemini-2.5-flash-lite` (already set in v1.2.4).
 - **App crash on corrupted localStorage** — `pv_chat_providers` key now parsed with `safeJsonParse` instead of bare `JSON.parse`; a corrupted value no longer halts app startup.
 - **Version badge mismatch** — header and settings footer both now display the correct `v1.2.5` version.
 
@@ -41,7 +63,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 ## [v1.2.4] – 2026-07-19
 
 ### Fixed
-- **Gemini API model updated** — replaced deprecated `gemini-1.5-flash` (retired from `v1beta`) with `gemini-3.5-flash`. The "Run AI" button now works without a 404 error.
+- **Gemini API model updated** — replaced deprecated `gemini-1.5-flash` (retired from `v1beta`) with `gemini-2.5-flash-lite`. The "Run AI" button now works without a 404 error.
 
 ### Changed
 - Service Worker cache bumped to `promptvault-cache-v1.2.4` to force a clean reload for all existing users.

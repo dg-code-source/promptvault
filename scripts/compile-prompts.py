@@ -58,8 +58,9 @@ def parse_markdown_file(filepath, filename):
         for i, line in enumerate(lines):
             trimmed = line.strip()
             
-            # Extract H1 or H2 heading
-            if (trimmed.startswith('#') or trimmed.startswith('##')) and title_index == -1:
+            # Extract H1 or H2 heading only (## check was dead code — ## always matches #;
+            # and bare # also matched ###+ by accident). Regex restricts to 1–2 hashes + space.
+            if re.match(r'^#{1,2}\s', trimmed) and title_index == -1:
                 title = re.sub(r'^#+\s*', '', trimmed)
                 title_index = i
                 continue

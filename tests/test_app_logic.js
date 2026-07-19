@@ -24,7 +24,7 @@ function renderMarkdown(text) {
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
   // Italic
-  html = html.replace(/\*([^*]+)\*\*/g, '<em>$1</em>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
   // Bullet lists (* or -)
   html = html.replace(/^\s*[\*\-] (.*$)/gim, '<li>$1</li>');
