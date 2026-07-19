@@ -1650,6 +1650,9 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       ? (draftCatCustom.value.trim() || 'General')
       : selectedCatVal;
 
+    // Automatically commit any pending tag typed in input box
+    handleAddNewTag();
+
     // Resolve Tags from Tag Picker Set
     const tags = Array.from(selectedTagsSet);
     const prompt = document.getElementById('draft-prompt').value;

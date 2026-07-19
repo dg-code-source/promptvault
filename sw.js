@@ -1,4 +1,4 @@
-const CACHE_NAME = 'promptvault-cache-v1.1.0';
+const CACHE_NAME = 'promptvault-cache-v1.1.1';
 const STATIC_ASSETS = [
   './',
   './index.html',

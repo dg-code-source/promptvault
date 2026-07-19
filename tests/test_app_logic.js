@@ -60,7 +60,25 @@ function compilePromptTextSimulated(template, inputValuesMap) {
   return compiled;
 }
 
-// 3. Test Sorting Logic
+// 3. Test Category Resolution Logic
+function resolveCategory(selectedVal, customInputVal) {
+  if (selectedVal === '__custom__') {
+    return customInputVal.trim() || 'General';
+  }
+  return selectedVal || 'General';
+}
+
+// 4. Test Tag Addition & Normalization Logic
+function processTags(selectedTagsSet, pendingInputVal) {
+  const finalSet = new Set(selectedTagsSet);
+  if (pendingInputVal && pendingInputVal.trim()) {
+    const tokens = pendingInputVal.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+    tokens.forEach(t => finalSet.add(t));
+  }
+  return Array.from(finalSet);
+}
+
+// 5. Test Sorting Logic
 function sortPrompts(prompts, sortMode, copyCounts) {
   const copy = [...prompts];
   if (sortMode === 'most-copied') {
@@ -111,4 +129,25 @@ assert.strictEqual(sortedMostCopied[1].id, 'p1'); // 10 copies
 assert.strictEqual(sortedMostCopied[2].id, 'p2'); // 5 copies
 console.log('✓ Test 3 Passed: Prompt sorting algorithms');
 
-console.log('\nAll JavaScript Unit Tests Passed Successfully!');
+// Test 4: Category Resolution (Dropdown vs Custom Input)
+assert.strictEqual(resolveCategory('Writing', ''), 'Writing', 'Should use existing category');
+assert.strictEqual(resolveCategory('__custom__', '  New Category  '), 'New Category', 'Should trim and use custom category input');
+assert.strictEqual(resolveCategory('__custom__', '   '), 'General', 'Should fallback to General if custom input is whitespace');
+console.log('✓ Test 4 Passed: Dynamic Category Resolution');
+
+// Test 5: Tag Addition, Normalization & Auto-commit
+const initialTags = new Set(['writing', 'code']);
+const finalTags = processTags(initialTags, '  AI , Productivity ,  code  ');
+assert.strictEqual(finalTags.length, 4, 'Should normalize, trim, and deduplicate tags');
+assert(finalTags.includes('ai'), 'Should contain normalized ai tag');
+assert(finalTags.includes('productivity'), 'Should contain normalized productivity tag');
+console.log('✓ Test 5 Passed: Tag addition, normalization & auto-commit');
+
+// Test 6: Modal Tab Code vs Preview Toggle
+const sampleTemplate = '## System Prompt\n\nAct as a {role:Senior Engineer}';
+const previewHtml = renderMarkdown(sampleTemplate);
+assert(previewHtml.includes('<h2>System Prompt</h2>'), 'Tab preview should render markdown headers');
+assert(previewHtml.includes('{role:Senior Engineer}'), 'Tab preview should show variable templates');
+console.log('✓ Test 6 Passed: Modal Tab Code vs Preview toggle');
+
+console.log('\nAll 6 JavaScript Unit Tests Passed Successfully!');
