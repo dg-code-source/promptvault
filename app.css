@@ -476,6 +476,27 @@ textarea.variable-input {
   transform: scale(1);
 }
 
+/* Expanded Dialog Box for Prompt Editor */
+#draft-modal .modal-content {
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#draft-modal .modal-body {
+  overflow-y: auto;
+  max-height: calc(90vh - 70px);
+  padding: 24px;
+}
+
+#draft-prompt {
+  min-height: 160px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
