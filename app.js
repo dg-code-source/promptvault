@@ -46,6 +46,9 @@ const toastContainer = document.getElementById('toast-container');
 
 let isDraftFullscreen = localStorage.getItem('pv_draft_fullscreen') === 'true'; // Track modal fullscreen state
 
+let copyCounts = JSON.parse(localStorage.getItem('pv_copy_counts')) || {};
+let activeSort = 'default';
+
 // Draft UI Elements
 const addDraftBtn = document.getElementById('add-draft-btn');
 const draftModal = document.getElementById('draft-modal');
@@ -61,6 +64,11 @@ const selectedTagsWrapper = document.getElementById('selected-tags-wrapper');
 const newTagInput = document.getElementById('new-tag-input');
 const addTagBtn = document.getElementById('add-tag-btn');
 const existingTagsChips = document.getElementById('existing-tags-chips');
+const sortPillsContainer = document.getElementById('sort-pills');
+const draftPromptTabEdit = document.getElementById('draft-prompt-tab-edit');
+const draftPromptTabPreview = document.getElementById('draft-prompt-tab-preview');
+const draftPromptTextarea = document.getElementById('draft-prompt');
+const draftPromptPreview = document.getElementById('draft-prompt-preview');
 
 // GitHub Token Input Element
 const githubTokenInput = document.getElementById('setting-github-token');
@@ -188,6 +196,13 @@ function renderPrompts() {
       return matchTitle || matchDesc || matchTags;
     });
   }
+
+  // Apply sorting
+  if (activeSort === 'most-copied') {
+    filtered.sort((a, b) => (copyCounts[b.id] || 0) - (copyCounts[a.id] || 0));
+  } else if (activeSort === 'alphabetical') {
+    filtered.sort((a, b) => a.title.localeCompare(b.title));
+  }
   
   if (filtered.length === 0) {
     if (activeCategory === 'favorites') {
@@ -228,7 +243,13 @@ function renderPrompts() {
     // Header
     const cat = document.createElement('div');
     cat.className = 'card-category';
-    cat.textContent = p.category;
+    cat.style.display = 'flex';
+    cat.style.alignItems = 'center';
+    cat.style.justifyContent = 'space-between';
+    
+    const catText = document.createElement('span');
+    catText.textContent = p.category;
+    cat.appendChild(catText);
     
     const title = document.createElement('h2');
     title.className = 'card-title';
@@ -240,6 +261,13 @@ function renderPrompts() {
       badge.textContent = 'Draft';
       title.appendChild(badge);
     }
+
+    if (p.id && copyCounts[p.id]) {
+      const copyBadge = document.createElement('span');
+      copyBadge.className = 'copy-count-badge';
+      copyBadge.textContent = `📋 ${copyCounts[p.id]}`;
+      title.appendChild(copyBadge);
+    }
     
     const desc = document.createElement('p');
     desc.className = 'card-description';
@@ -250,6 +278,29 @@ function renderPrompts() {
     previewContainer.className = 'card-prompt-preview';
     
     const bodyWrapper = document.createElement('div');
+    bodyWrapper.className = 'prompt-body-wrapper';
+
+    // View toggle button (Code vs Formatted Markdown)
+    const viewToggleBtn = document.createElement('button');
+    viewToggleBtn.className = 'view-toggle-btn';
+    viewToggleBtn.textContent = 'Preview';
+    
+    let isShowingMarkdown = false;
+    viewToggleBtn.onclick = (e) => {
+      e.stopPropagation();
+      isShowingMarkdown = !isShowingMarkdown;
+      if (isShowingMarkdown) {
+        viewToggleBtn.textContent = 'Code';
+        bodyWrapper.innerHTML = `<div class="markdown-preview">${renderMarkdown(p.prompt)}</div>`;
+      } else {
+        viewToggleBtn.textContent = 'Preview';
+        bodyWrapper.innerHTML = '';
+        const code = document.createElement('code');
+        code.textContent = p.prompt;
+        bodyWrapper.appendChild(code);
+      }
+    };
+    cat.appendChild(viewToggleBtn);
     bodyWrapper.className = 'prompt-body-wrapper';
     
     const code = document.createElement('code');
@@ -319,8 +370,25 @@ function renderPrompts() {
       Copy Prompt
     `;
     copyBtn.onclick = () => {
+      incrementCopyCount(p.id);
       const finalPrompt = compilePromptText(p.prompt, card);
       copyToClipboard(finalPrompt);
+      renderPrompts();
+    };
+
+    // Duplicate Action
+    const dupBtn = document.createElement('button');
+    dupBtn.className = 'btn btn-outline btn-icon-only';
+    dupBtn.setAttribute('aria-label', 'Duplicate prompt');
+    dupBtn.title = 'Duplicate Prompt';
+    dupBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+    `;
+    dupBtn.onclick = () => {
+      duplicatePrompt(p);
     };
     
     // Share Action
@@ -432,11 +500,13 @@ ${p.prompt}`;
       actions.appendChild(copyBtn);
       actions.appendChild(publishBtn);
       actions.appendChild(editBtn);
+      actions.appendChild(dupBtn);
       actions.appendChild(copyMdBtn);
       actions.appendChild(deleteBtn);
     } else {
       actions.appendChild(copyBtn);
       actions.appendChild(editBtn);
+      actions.appendChild(dupBtn);
       actions.appendChild(shareBtn);
       if (p.variables && p.variables.length > 0) {
         actions.appendChild(resetBtn);
@@ -865,7 +935,62 @@ function updateFullscreenUI() {
         <line x1="3" y1="21" x2="10" y2="14"></line>
       </svg>
     `;
-  }
+}
+
+// Client-side Markdown Renderer
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Code blocks (triple backticks)
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Headers (# H1, ## H2, ### H3)
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+  // Bold
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // Italic
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // Bullet lists (* or -)
+  html = html.replace(/^\s*[\*\-] (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/sim, '<ul>$1</ul>');
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
+}
+
+// Duplicate / Clone Prompt into a new Draft
+function duplicatePrompt(prompt) {
+  const clonedPrompt = {
+    id: null,
+    title: `Copy of ${prompt.title}`,
+    description: prompt.description,
+    category: prompt.category,
+    tags: prompt.tags ? [...prompt.tags] : [],
+    prompt: prompt.prompt,
+    isDraft: true
+  };
+  openEditDraftModal(clonedPrompt);
+}
+
+// Increment Copy Count for a prompt
+function incrementCopyCount(id) {
+  if (!id) return;
+  copyCounts[id] = (copyCounts[id] || 0) + 1;
+  localStorage.setItem('pv_copy_counts', JSON.stringify(copyCounts));
 }
 
 // Open Draft Edit Modal
@@ -1265,12 +1390,50 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       draftDeleteBtn.classList.add('hidden');
       draftDeleteBtn.onclick = null;
     }
+    if (draftPromptTabEdit && draftPromptTabPreview && draftPromptTextarea && draftPromptPreview) {
+      draftPromptTabEdit.classList.add('active');
+      draftPromptTabPreview.classList.remove('active');
+      draftPromptTextarea.classList.remove('hidden');
+      draftPromptPreview.classList.add('hidden');
+    }
     document.querySelector('#draft-modal h2').textContent = 'Create Prompt Draft';
     document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Local Draft';
   };
 
   draftCloseBtn.addEventListener('click', closeDraftModal);
   draftOverlay.addEventListener('click', closeDraftModal);
+
+  // Sort Pills Event Listener
+  if (sortPillsContainer) {
+    sortPillsContainer.addEventListener('click', (e) => {
+      const target = e.target.closest('.sort-pill');
+      if (!target) return;
+
+      sortPillsContainer.querySelectorAll('.sort-pill').forEach(btn => btn.classList.remove('active'));
+      target.classList.add('active');
+
+      activeSort = target.dataset.sort;
+      renderPrompts();
+    });
+  }
+
+  // Modal Prompt Tab Toggle (Edit Code vs Preview Markdown)
+  if (draftPromptTabEdit && draftPromptTabPreview && draftPromptTextarea && draftPromptPreview) {
+    draftPromptTabEdit.addEventListener('click', () => {
+      draftPromptTabEdit.classList.add('active');
+      draftPromptTabPreview.classList.remove('active');
+      draftPromptTextarea.classList.remove('hidden');
+      draftPromptPreview.classList.add('hidden');
+    });
+
+    draftPromptTabPreview.addEventListener('click', () => {
+      draftPromptTabPreview.classList.add('active');
+      draftPromptTabEdit.classList.remove('active');
+      draftPromptTextarea.classList.add('hidden');
+      draftPromptPreview.classList.remove('hidden');
+      draftPromptPreview.innerHTML = renderMarkdown(draftPromptTextarea.value);
+    });
+  }
 
   // Dynamic Category Select Toggle
   if (draftCatSelect) {

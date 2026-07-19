@@ -109,4 +109,26 @@ This document records the architectural blueprints, technical specifications, an
 * **Flexbox Textarea Expansion**: In Fullscreen mode (`100vw` by `100vh`), the modal body and prompt template textarea (`#draft-prompt`) dynamically flex to fill all available vertical viewport space (`flex: 1`), providing an expanded code editing experience on both desktop and mobile screens.
 * **Persistent User Preference**: The chosen mode is persisted in browser `localStorage` as `pv_draft_fullscreen`, ensuring subsequent prompt creation or editing sessions open directly in the user's preferred view layout.
 
+---
+
+## 10. Prompt Duplication / Cloning
+
+* **1-Click Duplication**: A Duplicate button (layer/copy icon) is rendered on all prompt cards (both published repository prompts and local drafts).
+* **Pre-filled Draft Spawning**: Clicking Duplicate invokes `duplicatePrompt(p)`, opening the prompt editor modal pre-filled with `"Copy of ${p.title}"`, inheriting all description, category, tags, and template text, saved as a new local draft.
+
+---
+
+## 11. Copy Count Tracking & Quick Sort Pill Buttons
+
+* **Usage Statistics Tracking**: Every time a user clicks "Copy Prompt" on a card, `incrementCopyCount(id)` updates `pv_copy_counts` in `localStorage`. A copy badge (`📋 X`) is rendered next to the card title.
+* **1-Tap Sort Pills**: A pill button row (`#sort-pills`) below search/category tabs (`Default`, `🔥 Most Copied`, `A-Z`) allows 1-tap switching to sort prompts dynamically.
+
+---
+
+## 12. Live Markdown Preview Toggle
+
+* **Lightweight Client Renderer**: Implemented `renderMarkdown(text)` to parse headers (`#`), bold (`**`), italic (`*`), bullet lists (`* ` / `- `), inline code (`` ` ``), code blocks (`` ``` ``), and line breaks.
+* **Card Body View Toggle**: Prompt cards feature a `Code` / `Preview` button in the category header to toggle between raw code view and rendered formatted HTML.
+* **Editor Modal Tab Bar**: `#draft-modal` features `Edit Code` and `Preview Markdown` tabs so users can preview formatted template text while editing.
+
 

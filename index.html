@@ -81,6 +81,14 @@
       <!-- Dynamic categories populated by app.js -->
     </nav>
 
+    <!-- Sort Pills Navigation -->
+    <div class="sort-pills" id="sort-pills">
+      <span class="sort-label">Sort:</span>
+      <button class="sort-pill active" data-sort="default">Default</button>
+      <button class="sort-pill" data-sort="most-copied">🔥 Most Copied</button>
+      <button class="sort-pill" data-sort="alphabetical">A-Z</button>
+    </div>
+
     <!-- Prompt Cards Grid -->
     <main class="prompts-main">
       <div id="prompts-grid" class="prompts-grid">
@@ -242,8 +250,12 @@
               <button type="button" id="helper-insert-btn" class="btn btn-outline" style="font-size: 13px; padding: 0 12px; height: 33px; display: flex; align-items: center; justify-content: center; border-color: var(--border-color); min-width: 70px;">
                 Insert
               </button>
+            <div class="modal-tab-bar">
+              <button type="button" id="draft-prompt-tab-edit" class="modal-tab-btn active">Edit Code</button>
+              <button type="button" id="draft-prompt-tab-preview" class="modal-tab-btn">Preview Markdown</button>
             </div>
             <textarea id="draft-prompt" required rows="5" placeholder="Write prompt template here. Use {variables} like {count:3} or {text}."></textarea>
+            <div id="draft-prompt-preview" class="markdown-preview hidden"></div>
           </div>
           <button type="submit" class="btn btn-dark btn-full">Save Local Draft</button>
         </form>
