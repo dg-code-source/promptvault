@@ -1,7 +1,19 @@
 // State Management
 let prompts = [];
-let drafts = JSON.parse(localStorage.getItem('pv_drafts')) || [];
-let favorites = JSON.parse(localStorage.getItem('pv_favorites')) || [];
+
+// Safe JSON parse helper — prevents app crash from corrupted localStorage data
+function safeJsonParse(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    console.warn(`[PromptVault] Corrupted localStorage key "${key}", resetting to default.`, e);
+    return fallback;
+  }
+}
+
+let drafts = safeJsonParse('pv_drafts', []);
+let favorites = safeJsonParse('pv_favorites', []);
 let activeCategory = 'all';
 let searchQuery = '';
 let hapticsEnabled = localStorage.getItem('pv_haptics') !== 'false'; // default true
@@ -48,7 +60,7 @@ const toastContainer = document.getElementById('toast-container');
 
 let isDraftFullscreen = localStorage.getItem('pv_draft_fullscreen') === 'true'; // Track modal fullscreen state
 
-let copyCounts = JSON.parse(localStorage.getItem('pv_copy_counts')) || {};
+let copyCounts = safeJsonParse('pv_copy_counts', {});
 let activeSort = 'default';
 
 // Draft UI Elements
@@ -220,11 +232,13 @@ function renderPrompts() {
   
   const allPrompts = [...prompts, ...drafts];
   let filtered = allPrompts.filter(p => {
+    if (!p) return false;
     // Category filter
     if (activeCategory === 'favorites') {
       return favorites.includes(p.id);
     } else if (activeCategory !== 'all') {
-      return p.category.toLowerCase() === activeCategory;
+      const pCat = p.category ? String(p.category).toLowerCase() : 'general';
+      return pCat === activeCategory;
     }
     return true;
   });
@@ -233,9 +247,10 @@ function renderPrompts() {
   if (searchQuery.trim().length > 0) {
     const query = searchQuery.toLowerCase().trim();
     filtered = filtered.filter(p => {
-      const matchTitle = p.title.toLowerCase().includes(query);
-      const matchDesc = p.description.toLowerCase().includes(query);
-      const matchTags = p.tags && p.tags.some(tag => tag.toLowerCase().includes(query));
+      if (!p) return false;
+      const matchTitle = p.title ? String(p.title).toLowerCase().includes(query) : false;
+      const matchDesc = p.description ? String(p.description).toLowerCase().includes(query) : false;
+      const matchTags = p.tags && Array.isArray(p.tags) && p.tags.some(tag => tag ? String(tag).toLowerCase().includes(query) : false);
       return matchTitle || matchDesc || matchTags;
     });
   }
@@ -244,7 +259,7 @@ function renderPrompts() {
   if (activeSort === 'most-copied') {
     filtered.sort((a, b) => (copyCounts[b.id] || 0) - (copyCounts[a.id] || 0));
   } else if (activeSort === 'alphabetical') {
-    filtered.sort((a, b) => a.title.localeCompare(b.title));
+    filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   }
   
   if (filtered.length === 0) {
@@ -413,7 +428,15 @@ function renderPrompts() {
       incrementCopyCount(p.id);
       const finalPrompt = compilePromptText(p.prompt, card);
       copyToClipboard(finalPrompt);
-      renderPrompts();
+      // Update the copy count badge in-place — avoids full re-render that would destroy variable inputs
+      const count = copyCounts[p.id] || 0;
+      let badge = card.querySelector('.copy-count-badge');
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'copy-count-badge';
+        card.querySelector('.card-title').appendChild(badge);
+      }
+      badge.textContent = `📋 ${count}`;
     };
 
     // Duplicate Action
@@ -753,6 +776,33 @@ function deleteDraft(id) {
   renderPrompts();
 }
 
+// Close Draft Creation/Edit Modal & Reset All State
+function closeDraftModal() {
+  draftModal.classList.add('hidden');
+  draftForm.reset();
+  editingDraftId = null;
+  selectedTagsSet.clear();
+  if (draftCatCustom) {
+    draftCatCustom.classList.add('hidden');
+    draftCatCustom.value = '';
+  }
+  if (toggleCustomCatBtn) {
+    toggleCustomCatBtn.textContent = '+ New Category';
+  }
+  if (draftDeleteBtn) {
+    draftDeleteBtn.classList.add('hidden');
+    draftDeleteBtn.onclick = null;
+  }
+  if (draftPromptTabEdit && draftPromptTabPreview && draftPromptTextarea && draftPromptPreview) {
+    draftPromptTabEdit.classList.add('active');
+    draftPromptTabPreview.classList.remove('active');
+    draftPromptTextarea.classList.remove('hidden');
+    draftPromptPreview.classList.add('hidden');
+  }
+  document.querySelector('#draft-modal h2').textContent = 'Create Prompt Draft';
+  document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Local Draft';
+}
+
 // Extract unique categories from loaded prompts + local drafts
 function getAllCategories() {
   const allPrompts = [...prompts, ...drafts];
@@ -1048,10 +1098,17 @@ function renderMarkdown(text) {
 
   // Bullet lists (* or -)
   html = html.replace(/^\s*[\*\-] (.*$)/gim, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>)/sim, '<ul>$1</ul>');
+  // Wrap consecutive <li> groups in <ul> — use gm flags (no dotAll) to avoid greedy across-block capture
+  html = html.replace(/(<li>[\s\S]*?<\/li>)(\s*<li>[\s\S]*?<\/li>)*/g, '<ul>$&</ul>');
 
-  // Line breaks
-  html = html.replace(/\n/g, '<br>');
+  // Line breaks: only on non-block lines
+  // Split on <pre>...</pre> blocks so newlines inside code blocks are preserved as-is
+  const parts = html.split(/(<pre>[\s\S]*?<\/pre>)/g);
+  html = parts.map((part, i) => {
+    if (i % 2 === 1) return part; // odd index = inside a <pre> block, leave untouched
+    // Replace newlines not immediately following a block-level closing tag
+    return part.replace(/\n(?!<\/(h[1-6]|ul|li|pre|blockquote)>)/g, '<br>');
+  }).join('');
 
   return html;
 }
@@ -1165,7 +1222,11 @@ function runPromptWithGemini(compiledPrompt) {
   })
   .catch(err => {
     console.error('Gemini API Error:', err);
-    aiRunnerStatus.innerHTML = `<span style="color: #dc2626;">⚠ Generation failed: ${err.message}</span>`;
+    aiRunnerStatus.innerHTML = '';
+    const errSpan = document.createElement('span');
+    errSpan.style.color = '#dc2626';
+    errSpan.textContent = `⚠ Generation failed: ${err.message}`;
+    aiRunnerStatus.appendChild(errSpan);
     aiResponseBox.innerHTML = `<div style="color: #dc2626; padding: 8px;">Error generating AI response. Please check your Gemini API Key in Settings.</div>`;
   });
 }
@@ -1175,11 +1236,18 @@ function openEditDraftModal(prompt) {
   editingDraftId = prompt.id;
   editingPromptIsDraft = prompt.isDraft === true;
   
-  const isRepoEdit = !editingPromptIsDraft;
+  // id===null means this is a brand-new duplicate (creation mode), not an edit
+  const isCreationMode = !prompt.id;
+  const isRepoEdit = !editingPromptIsDraft && !isCreationMode;
   
   // Set modal header and submit button text
-  document.querySelector('#draft-modal h2').textContent = isRepoEdit ? 'Edit Published Prompt' : 'Edit Prompt Draft';
-  document.querySelector('#draft-modal button[type="submit"]').textContent = isRepoEdit ? 'Publish Updates' : 'Save Changes';
+  if (isCreationMode) {
+    document.querySelector('#draft-modal h2').textContent = 'Create Prompt Draft';
+    document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Local Draft';
+  } else {
+    document.querySelector('#draft-modal h2').textContent = isRepoEdit ? 'Edit Published Prompt' : 'Edit Prompt Draft';
+    document.querySelector('#draft-modal button[type="submit"]').textContent = isRepoEdit ? 'Publish Updates' : 'Save Changes';
+  }
   
   // Prefill values
   document.getElementById('draft-title').value = prompt.title;
@@ -1188,24 +1256,30 @@ function openEditDraftModal(prompt) {
   renderTagPicker(prompt.tags || []);
   document.getElementById('draft-prompt').value = prompt.prompt;
 
-  // Show top-left delete icon & attach deletion event
+  // Show top-left delete icon & attach deletion event (only when editing an existing prompt)
   if (draftDeleteBtn) {
-    draftDeleteBtn.classList.remove('hidden');
-    draftDeleteBtn.onclick = () => {
-      const confirmMsg = prompt.isDraft 
-        ? `Delete local draft '${prompt.title}'?` 
-        : `Are you sure you want to delete '${prompt.title}' from GitHub?`;
-      
-      if (confirm(confirmMsg)) {
-        if (prompt.isDraft) {
-          deleteDraft(prompt.id);
-          closeDraftModal();
-          showToast('Local draft deleted!', 'success');
-        } else {
-          deleteRepoPromptFromGitHub(prompt.id, prompt.title, draftDeleteBtn);
+    if (isCreationMode) {
+      // Hide delete for brand-new / duplicate prompts — there's nothing to delete yet
+      draftDeleteBtn.classList.add('hidden');
+      draftDeleteBtn.onclick = null;
+    } else {
+      draftDeleteBtn.classList.remove('hidden');
+      draftDeleteBtn.onclick = () => {
+        const confirmMsg = prompt.isDraft 
+          ? `Delete local draft '${prompt.title}'?` 
+          : `Are you sure you want to delete '${prompt.title}' from GitHub?`;
+        
+        if (confirm(confirmMsg)) {
+          if (prompt.isDraft) {
+            deleteDraft(prompt.id);
+            closeDraftModal();
+            showToast('Local draft deleted!', 'success');
+          } else {
+            deleteRepoPromptFromGitHub(prompt.id, prompt.title, draftDeleteBtn);
+          }
         }
-      }
-    };
+      };
+    }
   }
   
   updateFullscreenUI();
@@ -1304,6 +1378,7 @@ ${prompt.prompt}`;
       const publishedPrompt = { ...prompt, id: repoId, isDraft: false };
       prompts.unshift(publishedPrompt);
       deleteDraft(prompt.id);
+      closeDraftModal(); // Fix 7: close modal after publish, consistent with publishRepoUpdateToGitHub
     } else {
       const errData = await res.json();
       throw new Error(errData.message || 'API Error');
@@ -1537,7 +1612,7 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   const purgeCacheBtn = document.getElementById('purge-cache-btn');
   if (purgeCacheBtn) {
     purgeCacheBtn.addEventListener('click', async () => {
-      showToast('Clearing cache and loading newest version...', 'sync');
+      showToast('Clearing cache and loading newest version...', 'success');
       if ('caches' in window) {
         const keys = await caches.keys();
         await Promise.all(keys.map(k => caches.delete(k)));
@@ -1581,13 +1656,12 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   
   // Connection monitoring: auto refresh prompts when network returns
   window.addEventListener('online', () => {
-    loadPrompts(true).then(() => {
-      showToast('Connection restored. Prompts synced!', 'sync');
-    });
+    loadPrompts(true);
   });
   
   window.addEventListener('offline', () => {
     showToast('Running in Offline Mode.', 'error');
+
   });
 
   // Draft Modal events
@@ -1615,32 +1689,6 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
       updateFullscreenUI();
     });
   }
-
-  const closeDraftModal = () => {
-    draftModal.classList.add('hidden');
-    draftForm.reset();
-    editingDraftId = null;
-    selectedTagsSet.clear();
-    if (draftCatCustom) {
-      draftCatCustom.classList.add('hidden');
-      draftCatCustom.value = '';
-    }
-    if (toggleCustomCatBtn) {
-      toggleCustomCatBtn.textContent = '+ New Category';
-    }
-    if (draftDeleteBtn) {
-      draftDeleteBtn.classList.add('hidden');
-      draftDeleteBtn.onclick = null;
-    }
-    if (draftPromptTabEdit && draftPromptTabPreview && draftPromptTextarea && draftPromptPreview) {
-      draftPromptTabEdit.classList.add('active');
-      draftPromptTabPreview.classList.remove('active');
-      draftPromptTextarea.classList.remove('hidden');
-      draftPromptPreview.classList.add('hidden');
-    }
-    document.querySelector('#draft-modal h2').textContent = 'Create Prompt Draft';
-    document.querySelector('#draft-modal button[type="submit"]').textContent = 'Save Local Draft';
-  };
 
   draftCloseBtn.addEventListener('click', closeDraftModal);
   draftOverlay.addEventListener('click', closeDraftModal);
@@ -1732,75 +1780,89 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
     try {
       const title = document.getElementById('draft-title').value.trim();
       const description = document.getElementById('draft-desc').value.trim();
-    
-    // Resolve Category (Custom input box if visible & filled, else select dropdown)
-    const customCatVal = draftCatCustom ? draftCatCustom.value.trim() : '';
-    const isCustomVisible = draftCatCustom && !draftCatCustom.classList.contains('hidden');
-    const selectedCatVal = draftCatSelect ? draftCatSelect.value : 'General';
-    
-    let category = 'General';
-    if (isCustomVisible && customCatVal) {
-      category = customCatVal;
-    } else if (selectedCatVal === '__custom__') {
-      category = customCatVal || 'General';
-    } else {
-      category = selectedCatVal;
-    }
 
-    // Automatically commit any pending tag typed in input box
-    handleAddNewTag();
+      // Fix 2: Validate blank/whitespace-only title
+      if (!title) {
+        showToast('Title cannot be blank.', 'error');
+        return;
+      }
 
-    // Resolve Tags from Tag Picker Set
-    const tags = Array.from(selectedTagsSet);
-    const prompt = document.getElementById('draft-prompt').value;
+      // Resolve Category (Custom input box if visible & filled, else select dropdown)
+      const customCatVal = draftCatCustom ? draftCatCustom.value.trim() : '';
+      const isCustomVisible = draftCatCustom && !draftCatCustom.classList.contains('hidden');
+      const selectedCatVal = draftCatSelect ? draftCatSelect.value : 'General';
 
-    const variables = extractVariables(prompt);
+      let category = 'General';
+      if (isCustomVisible && customCatVal) {
+        category = customCatVal;
+      } else if (selectedCatVal === '__custom__') {
+        category = customCatVal || 'General';
+      } else {
+        category = selectedCatVal;
+      }
 
-    if (editingDraftId) {
-      if (editingPromptIsDraft) {
-        // Edit Mode for Local Draft
-        const draftIndex = drafts.findIndex(d => d.id === editingDraftId);
-        if (draftIndex > -1) {
-          drafts[draftIndex].title = title;
-          drafts[draftIndex].description = description;
-          drafts[draftIndex].category = category;
-          drafts[draftIndex].tags = tags;
-          drafts[draftIndex].prompt = prompt;
-          drafts[draftIndex].variables = variables;
-          localStorage.setItem('pv_drafts', JSON.stringify(drafts));
-          showToast('Local draft updated!', 'success');
-          closeDraftModal();
-          activeCategory = category.toLowerCase();
-          renderCategories();
-          renderPrompts();
+      // Automatically commit any pending tag typed in input box
+      handleAddNewTag();
+
+      // Resolve Tags from Tag Picker Set
+      const tags = Array.from(selectedTagsSet);
+
+      // Fix 3: Trim prompt body before saving
+      const prompt = document.getElementById('draft-prompt').value.trim();
+
+      // Fix 2: Validate blank/whitespace-only prompt body
+      if (!prompt) {
+        showToast('Prompt template cannot be empty.', 'error');
+        return;
+      }
+
+      const variables = extractVariables(prompt);
+
+      if (editingDraftId) {
+        if (editingPromptIsDraft) {
+          // Edit Mode for Local Draft
+          const draftIndex = drafts.findIndex(d => d.id === editingDraftId);
+          if (draftIndex > -1) {
+            drafts[draftIndex].title = title;
+            drafts[draftIndex].description = description;
+            drafts[draftIndex].category = category;
+            drafts[draftIndex].tags = tags;
+            drafts[draftIndex].prompt = prompt;
+            drafts[draftIndex].variables = variables;
+            localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+            showToast('Local draft updated!', 'success');
+            closeDraftModal();
+            activeCategory = category.toLowerCase();
+            renderCategories();
+            renderPrompts();
+          }
+        } else {
+          // Edit Mode for Repository Prompt (Publish directly to GitHub)
+          const submitBtn = draftForm.querySelector('button[type="submit"]');
+          await publishRepoUpdateToGitHub(editingDraftId, title, description, category, tags, prompt, submitBtn);
         }
       } else {
-        // Edit Mode for Repository Prompt (Publish directly to GitHub)
-        const submitBtn = draftForm.querySelector('button[type="submit"]');
-        await publishRepoUpdateToGitHub(editingDraftId, title, description, category, tags, prompt, submitBtn);
-      }
-    } else {
-      // Creation mode
-      const id = 'draft-' + Date.now();
-      const newDraft = {
-        id,
-        title,
-        description,
-        category,
-        tags,
-        prompt,
-        variables,
-        isDraft: true
-      };
+        // Creation mode — Fix 6: collision-safe ID with random suffix
+        const id = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const newDraft = {
+          id,
+          title,
+          description,
+          category,
+          tags,
+          prompt,
+          variables,
+          isDraft: true
+        };
 
-      drafts.push(newDraft);
-      localStorage.setItem('pv_drafts', JSON.stringify(drafts));
-      showToast('Local draft created!', 'success');
-      closeDraftModal();
-      activeCategory = category.toLowerCase();
-      renderCategories();
-      renderPrompts();
-    }
+        drafts.push(newDraft);
+        localStorage.setItem('pv_drafts', JSON.stringify(drafts));
+        showToast('Local draft created!', 'success');
+        closeDraftModal();
+        activeCategory = category.toLowerCase();
+        renderCategories();
+        renderPrompts();
+      }
     } finally {
       isSubmittingDraft = false;
     }
@@ -1810,7 +1872,7 @@ Write your prompt template here. Use {variable} or {variable:default} for inputs
   const helperVarNameInput = document.getElementById('helper-var-name');
   const helperVarDefaultInput = document.getElementById('helper-var-default');
   const helperInsertBtn = document.getElementById('helper-insert-btn');
-  const draftPromptTextarea = document.getElementById('draft-prompt');
+  // Fix 5: draftPromptTextarea re-declaration removed — module-level variable is used instead
 
   helperInsertBtn.addEventListener('click', () => {
     const varName = helperVarNameInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '');
