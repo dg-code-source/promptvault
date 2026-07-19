@@ -177,7 +177,8 @@ const LLM_CHAT_PROVIDERS = [
 ];
 
 // Load persisted provider visibility; fall back to defaultEnabled per provider
-const _savedProviders = JSON.parse(localStorage.getItem('pv_chat_providers') || 'null');
+// Use safeJsonParse to prevent a corrupted key from crashing app startup
+const _savedProviders = safeJsonParse('pv_chat_providers', null);
 const enabledChatProviders = {};
 LLM_CHAT_PROVIDERS.forEach(p => {
   enabledChatProviders[p.id] = _savedProviders
